@@ -1,0 +1,12 @@
+node_modules/
+.next/
+.turbo/
+dist/
+build/
+coverage/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*.tsbuildinfo
+.env
+*.log

@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --background: 220 18% 7%;
+  --foreground: 210 24% 92%;
+  --card: 220 16% 10%;
+  --card-foreground: 210 24% 93%;
+  --primary: 194 58% 50%;
+  --primary-foreground: 220 24% 7%;
+  --secondary: 220 14% 14%;
+  --secondary-foreground: 210 20% 88%;
+  --muted: 220 13% 13%;
+  --muted-foreground: 214 11% 61%;
+  --accent: 214 38% 24%;
+  --accent-foreground: 210 28% 94%;
+  --destructive: 4 68% 52%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 218 13% 19%;
+  --input: 218 13% 22%;
+  --ring: 194 58% 50%;
+  --radius: 6px;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: #0d1117;
+  color: hsl(var(--foreground));
+  letter-spacing: 0;
+  text-rendering: optimizeLegibility;
+}
+
+.react-flow__attribution {
+  display: none;
+}
+
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.045) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+::selection {
+  background: rgba(56, 189, 248, 0.28);
+  color: hsl(var(--foreground));
+}
