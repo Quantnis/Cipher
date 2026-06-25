@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     openai_base_url: str | None = None
     openai_api_key: str | None = None
     openai_model: str = "gpt-4o"
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "qwen2.5-coder:7b"
+    ollama_endpoint: str = "/api/chat"
+    ollama_timeout_seconds: int = 60
     narrative_max_tokens: int = 3000
     narrative_temperature: float = 0.3
     search_api_provider: str | None = None
@@ -26,6 +30,7 @@ class Settings(BaseSettings):
     tg_bot_token: str | None = None
     hibp_api_key: str | None = None
     tor_proxy_url: str | None = None
+    enable_authorized_tor: bool = False
     etherscan_api_key: str | None = None
     tronscan_api_key: str | None = None
     blockchain_provider: str | None = None

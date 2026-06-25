@@ -4,23 +4,53 @@
 
 :root {
   color-scheme: dark;
-  --background: 220 18% 7%;
-  --foreground: 210 24% 92%;
-  --card: 220 16% 10%;
-  --card-foreground: 210 24% 93%;
-  --primary: 194 58% 50%;
-  --primary-foreground: 220 24% 7%;
-  --secondary: 220 14% 14%;
-  --secondary-foreground: 210 20% 88%;
-  --muted: 220 13% 13%;
-  --muted-foreground: 214 11% 61%;
-  --accent: 214 38% 24%;
-  --accent-foreground: 210 28% 94%;
-  --destructive: 4 68% 52%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 218 13% 19%;
-  --input: 218 13% 22%;
-  --ring: 194 58% 50%;
+  --bg-base: #0D1117;
+  --bg-surface: #161B22;
+  --bg-card: #21262D;
+  --bg-elevated: #2D333B;
+  --border-subtle: #21262D;
+  --border-default: #30363D;
+  --border-strong: #484F58;
+  --text-primary: #E6EDF3;
+  --text-secondary: #8B949E;
+  --text-muted: #484F58;
+  --color-critical: #F85149;
+  --color-warning: #D29922;
+  --color-safe: #3FB950;
+  --color-info: #2F81F7;
+  --color-accent: #79C0FF;
+  --cat-vape: #D29922;
+  --cat-crypto: #BC8CFF;
+  --cat-alcohol: #79C0FF;
+  --cat-drugs: #F85149;
+  --cat-contraband: #E09B3D;
+  --cat-leak: #2F81F7;
+  --cat-hidden: #A5A5A5;
+  --badge-critical-bg: rgba(248, 81, 73, 0.15);
+  --badge-critical-text: #F85149;
+  --badge-warning-bg: rgba(210, 153, 34, 0.15);
+  --badge-warning-text: #D29922;
+  --badge-safe-bg: rgba(63, 185, 80, 0.15);
+  --badge-safe-text: #3FB950;
+  --badge-info-bg: rgba(47, 129, 247, 0.15);
+  --badge-info-text: #2F81F7;
+  --background: 216 28% 7%;
+  --foreground: 210 29% 93%;
+  --card: 215 21% 11%;
+  --card-foreground: 210 29% 93%;
+  --primary: 212 92% 58%;
+  --primary-foreground: 210 29% 93%;
+  --secondary: 213 13% 18%;
+  --secondary-foreground: 217 10% 58%;
+  --muted: 216 14% 14%;
+  --muted-foreground: 217 10% 58%;
+  --accent: 207 100% 74%;
+  --accent-foreground: 210 29% 93%;
+  --destructive: 3 93% 63%;
+  --destructive-foreground: 210 29% 93%;
+  --border: 213 12% 21%;
+  --input: 213 13% 18%;
+  --ring: 212 92% 58%;
   --radius: 6px;
 }
 
@@ -30,12 +60,15 @@
 
 html,
 body {
+  width: 100%;
+  height: 100%;
   min-height: 100%;
+  overflow: hidden;
 }
 
 body {
-  background: #0d1117;
-  color: hsl(var(--foreground));
+  background-color: #09090b;
+  color: var(--text-primary);
   letter-spacing: 0;
   text-rendering: optimizeLegibility;
 }
@@ -46,12 +79,12 @@ body {
 
 .grid-bg {
   background-image:
-    linear-gradient(rgba(148, 163, 184, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.045) 1px, transparent 1px);
+    linear-gradient(rgba(139, 148, 158, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 148, 158, 0.045) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
 ::selection {
-  background: rgba(56, 189, 248, 0.28);
-  color: hsl(var(--foreground));
+  background: rgba(47, 129, 247, 0.28);
+  color: var(--text-primary);
 }

@@ -19,6 +19,14 @@ def generate_report(payload: dict):
     return ReportGenerator().generate(case_id)
 
 
+@router.post("/deep-analysis/{entity_id}")
+def generate_deep_analysis(entity_id: int):
+    try:
+        return ReportGenerator().generate_deep_analysis(entity_id)
+    except KeyError:
+        raise HTTPException(404, "Entity not found")
+
+
 @router.get("/{report_id}")
 def get_report(report_id: int):
     try:

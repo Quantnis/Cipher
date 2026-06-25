@@ -1,0 +1,20 @@
+[
+  {
+    "title": "Mock authorized onion sample",
+    "sourceUrl": "mock://onion/post/1",
+    "content": "Mock authorized darknet dataset row for vape delivery Almaty telegram usdt. Alias @sample_vape_kz, +77000000000, TQ7DemoWallet000000000000000001, Алматы. No real marketplace or instructions.",
+    "metadata": {
+      "synthetic": true,
+      "category_hint": "suspected_illicit_vape_sales"
+    }
+  },
+  {
+    "title": "Mock authorized leak row",
+    "sourceUrl": "mock://onion/post/2",
+    "content": "Mock authorized dataset row: database leak wording, demo email demo@example.kz, @leak_watch_kz, Караганда. Non-operational synthetic evidence only.",
+    "metadata": {
+      "synthetic": true,
+      "category_hint": "suspected_database_leak"
+    }
+  }
+]

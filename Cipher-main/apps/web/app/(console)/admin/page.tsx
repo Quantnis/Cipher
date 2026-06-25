@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/neon-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableScroll } from "@/components/ui/table";
 import { api } from "@/lib/api";
 import type { SlangTerm } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
@@ -32,10 +32,10 @@ export default function AdminPage() {
     toast.success("Keyword dictionary updated");
   }
   return (
-    <>
+    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
       <PageHeader title="Settings / Admin" description="Manage risk weights, keyword dictionary, allowlist posture, AI provider placeholders, audit logs, data retention, and redaction controls." />
-      <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
-        <div className="flex flex-col gap-4">
+      <div className="grid min-h-0 flex-1 gap-4 overflow-hidden xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain pr-1">
           <Card>
             <CardHeader><CardTitle>Risk scoring weights</CardTitle><CardDescription>Adjust explainable scoring components used by the backend engine.</CardDescription></CardHeader>
             <CardContent className="flex flex-col gap-3">
@@ -66,16 +66,18 @@ export default function AdminPage() {
             </CardContent>
           </Card>
         </div>
-        <Card>
+        <Card className="flex min-h-0 flex-col">
           <CardHeader><CardTitle>Audit log viewer</CardTitle><CardDescription>Every analyst action is recorded by route services.</CardDescription></CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader><TableRow><TableHead>Action</TableHead><TableHead>Target</TableHead><TableHead>Time</TableHead></TableRow></TableHeader>
-              <TableBody>{logs.slice(0, 12).map((log) => <TableRow key={log.id}><TableCell>{log.action}</TableCell><TableCell><Badge variant="outline">{log.target_type}</Badge></TableCell><TableCell>{formatDate(log.created_at)}</TableCell></TableRow>)}</TableBody>
-            </Table>
+          <CardContent className="flex min-h-0 flex-1 flex-col p-0">
+            <TableScroll>
+              <Table>
+                <TableHeader><TableRow><TableHead>Action</TableHead><TableHead>Target</TableHead><TableHead>Time</TableHead></TableRow></TableHeader>
+                <TableBody>{logs.slice(0, 12).map((log) => <TableRow key={log.id}><TableCell>{log.action}</TableCell><TableCell><Badge variant="outline">{log.target_type}</Badge></TableCell><TableCell>{formatDate(log.created_at)}</TableCell></TableRow>)}</TableBody>
+              </Table>
+            </TableScroll>
           </CardContent>
         </Card>
       </div>
-    </>
+    </div>
   );
 }

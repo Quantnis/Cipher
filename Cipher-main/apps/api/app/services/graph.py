@@ -6,7 +6,7 @@ from app import models
 from app.database import SessionLocal
 from app.services.repository import entity_to_api, source_to_api, to_dict
 
-CLUSTER_PALETTE = ["#22d3ee", "#6366f1", "#f43f5e", "#f59e0b", "#10b981", "#a855f7", "#38bdf8"]
+CLUSTER_PALETTE = ["#2F81F7", "#BC8CFF", "#F85149", "#D29922", "#3FB950", "#E09B3D", "#79C0FF"]
 
 
 class GraphService:
@@ -32,19 +32,20 @@ class GraphService:
             for item in items:
                 source = db.get(models.Source, item.source_id) if item.source_id else None
                 if source:
-                    add_node({"id": f"source-{source.id}", "type": source.type, "label": source.name, "riskScore": int(item.risk_score), "metadata": {**source_to_api(source), "captured_at": item.captured_at.isoformat()}})
-                item_node = {"id": f"item-{item.id}", "type": "post/message", "label": item.title or item.risk_category, "riskScore": int(item.risk_score), "metadata": to_dict(item)}
+                    add_node({"id": f"source-{source.id}", "type": "Source", "label": source.name, "riskScore": int(item.risk_score), "metadata": {**source_to_api(source), "captured_at": item.captured_at.isoformat(), "source_type": source.type}})
+                item_node = {"id": f"item-{item.id}", "type": "Document", "label": item.title or item.risk_category, "riskScore": int(item.risk_score), "metadata": to_dict(item)}
                 add_node(item_node)
                 if source:
-                    edges.append({"id": f"source-item-{source.id}-{item.id}", "source": f"source-{source.id}", "target": f"item-{item.id}", "label": "collected", "relationshipType": "mentioned_in", "weight": 1})
+                    edges.append({"id": f"source-item-{source.id}-{item.id}", "source": f"source-{source.id}", "target": f"item-{item.id}", "label": "from source", "relationshipType": "DOCUMENT_FROM_SOURCE", "weight": 1})
                 links = db.scalars(select(models.ItemEntity).where(models.ItemEntity.item_id == item.id)).all()
                 for link in links:
                     entity = db.get(models.Entity, link.entity_id)
                     if not entity or (entity_type and entity.type != entity_type and entity.type.lower() != entity_type.lower()):
                         continue
                     add_node({"id": f"entity-{entity.id}", "type": entity.type, "label": entity.value_redacted, "riskScore": int(max(entity.risk_score, item.risk_score)), "metadata": entity_to_api(entity)})
-                    relationship = "uses wallet" if entity.type == "crypto_wallet" else "located in" if entity.type == "city" else "mentions"
-                    edges.append({"id": f"item-entity-{item.id}-{entity.id}", "source": f"item-{item.id}", "target": f"entity-{entity.id}", "label": relationship, "relationshipType": relationship.replace(" ", "_"), "weight": max(1, link.confidence * 3)})
+                    relationship = "WALLET_SEEN_WITH_HANDLE" if entity.type in {"wallet", "crypto_wallet"} else "ENTITY_SEEN_IN_LOCATION" if entity.type in {"location", "city"} else "DOCUMENT_MENTIONS_ENTITY"
+                    label = "uses wallet" if entity.type in {"wallet", "crypto_wallet"} else "located in" if entity.type in {"location", "city"} else "mentions"
+                    edges.append({"id": f"item-entity-{item.id}-{entity.id}", "source": f"item-{item.id}", "target": f"entity-{entity.id}", "label": label, "relationshipType": relationship, "weight": max(1, link.confidence * 3)})
             self._append_hidden_links(db, nodes, edges, seen_nodes, entity_type)
             clusters = self._clusters(nodes, edges)
             cluster_by_node = {node_id: cluster["id"] for cluster in clusters for node_id in cluster["node_ids"]}
@@ -98,6 +99,8 @@ class GraphService:
         for node in nodes:
             adjacency[node["id"]]
         for edge in edges:
+            if edge.get("relationshipType") == "DOCUMENT_FROM_SOURCE":
+                continue
             adjacency[edge["source"]].add(edge["target"])
             adjacency[edge["target"]].add(edge["source"])
         seen: set[str] = set()
@@ -171,5 +174,3 @@ class GraphService:
                 keep = set(cluster["node_ids"])
                 return {"nodes": [node for node in payload["nodes"] if node["id"] in keep], "edges": [edge for edge in payload["edges"] if edge["source"] in keep and edge["target"] in keep], "clusters": [cluster]}
         return payload
-
-

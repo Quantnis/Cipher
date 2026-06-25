@@ -113,6 +113,113 @@ def map_signals(db: Session = Depends(get_db)):
     return list(by_city.values())
 
 
+def _route_severity(score: float) -> str:
+    if score >= 80:
+        return "CRITICAL"
+    if score >= 60:
+        return "HIGH"
+    if score >= 40:
+        return "MEDIUM"
+    return "LOW"
+
+
+def _route_seen_at(row: models.Location, items_by_id: dict[int, models.RawItem]) -> str | None:
+    item = items_by_id.get(row.item_id) if row.item_id else None
+    value = item.captured_at if item else row.created_at
+    return value.isoformat() if value else None
+
+
+def _add_route(routes: dict[tuple[str, str, str, str], dict], *, start: models.Location, end: models.Location, category: str, route_source: str, item_id: int | None, items_by_id: dict[int, models.RawItem]) -> None:
+    if start.city == end.city:
+        return
+    key = (start.city, end.city, category, route_source)
+    if key not in routes:
+        routes[key] = {
+            "id": f"{start.city}->{end.city}:{category}:{route_source}",
+            "from_city": start.city,
+            "to_city": end.city,
+            "from_latitude": start.latitude,
+            "from_longitude": start.longitude,
+            "to_latitude": end.latitude,
+            "to_longitude": end.longitude,
+            "category": category,
+            "route_source": route_source,
+            "signal_count": 0,
+            "max_risk": 0,
+            "severity": "LOW",
+            "first_seen": None,
+            "last_seen": None,
+            "item_ids": [],
+        }
+    route = routes[key]
+    score = max(float(start.risk_score or 0), float(end.risk_score or 0))
+    route["signal_count"] += 1
+    route["max_risk"] = max(route["max_risk"], score)
+    route["severity"] = _route_severity(route["max_risk"])
+    if item_id is not None and item_id not in route["item_ids"]:
+        route["item_ids"].append(item_id)
+    for seen_at in (_route_seen_at(start, items_by_id), _route_seen_at(end, items_by_id)):
+        if seen_at:
+            route["first_seen"] = min(route["first_seen"] or seen_at, seen_at)
+            route["last_seen"] = max(route["last_seen"] or seen_at, seen_at)
+
+
+@router.get("/map/routes")
+@router.get("/api/map/routes")
+def map_routes(db: Session = Depends(get_db)):
+    rows = db.scalars(select(models.Location).where(models.Location.item_id.is_not(None), models.Location.latitude.is_not(None), models.Location.longitude.is_not(None)).order_by(models.Location.item_id, models.Location.id)).all()
+    item_ids = sorted({row.item_id for row in rows if row.item_id})
+    item_rows = db.scalars(select(models.RawItem).where(models.RawItem.id.in_(item_ids))).all() if item_ids else []
+    items_by_id = {item.id: item for item in item_rows}
+
+    by_item: dict[int, list[models.Location]] = defaultdict(list)
+    for row in rows:
+        if row.item_id:
+            by_item[row.item_id].append(row)
+
+    routes: dict[tuple[str, str, str, str], dict] = {}
+    multi_city_items = 0
+    for item_id, locations in by_item.items():
+        ordered: list[models.Location] = []
+        seen: set[str] = set()
+        for location in locations:
+            if location.city in seen:
+                continue
+            seen.add(location.city)
+            ordered.append(location)
+        if len(ordered) < 2:
+            continue
+        multi_city_items += 1
+        for index, start in enumerate(ordered):
+            for end in ordered[index + 1:]:
+                category = start.category or end.category or items_by_id.get(item_id, None).risk_category if item_id in items_by_id else "unknown"
+                _add_route(routes, start=start, end=end, category=category, route_source="co_mentioned", item_id=item_id, items_by_id=items_by_id)
+
+    co_mentioned_route_count = len(routes)
+    if co_mentioned_route_count == 0:
+        by_category: dict[str, list[models.Location]] = defaultdict(list)
+        for row in sorted(rows, key=lambda value: (items_by_id.get(value.item_id).captured_at if value.item_id in items_by_id else value.created_at, value.id)):
+            by_category[row.category or "unknown"].append(row)
+        for category, locations in by_category.items():
+            previous: models.Location | None = None
+            for location in locations:
+                if previous and previous.city != location.city:
+                    _add_route(routes, start=previous, end=location, category=category, route_source="category_sequence", item_id=location.item_id, items_by_id=items_by_id)
+                previous = location
+
+    result = sorted(routes.values(), key=lambda item: (item["route_source"] == "co_mentioned", item["max_risk"], item["signal_count"]), reverse=True)
+    return {
+        "routes": result,
+        "diagnostics": {
+            "location_rows": len(rows),
+            "items_with_locations": len(by_item),
+            "multi_city_items": multi_city_items,
+            "co_mentioned_routes": co_mentioned_route_count,
+            "route_source": "co_mentioned" if co_mentioned_route_count else "category_sequence",
+        },
+    }
+
+
 @router.get("/map/cities/{city}")
 @router.get("/api/map/cities/{city}")
 def city_detail(city: str, db: Session = Depends(get_db)):

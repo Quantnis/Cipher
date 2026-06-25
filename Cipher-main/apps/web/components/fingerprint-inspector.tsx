@@ -26,7 +26,7 @@ function MiniBar({ label, value }: { label: string; value: number }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-zinc-500"><span>{label}</span><span className="font-mono text-zinc-300">{pct(value)}</span></div>
-      <div className="h-1 overflow-hidden rounded-full bg-zinc-800"><div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-indigo-500" style={{ width: pct(value) }} /></div>
+      <div className="h-1 overflow-hidden rounded-full bg-zinc-800"><div className="h-full rounded-full bg-gradient-to-r from-signal-info to-signal-accent" style={{ width: pct(value) }} /></div>
     </div>
   );
 }

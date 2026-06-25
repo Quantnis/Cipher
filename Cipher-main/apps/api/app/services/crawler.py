@@ -25,6 +25,17 @@ from app.services.repository import severity_from_score
 COLLECTOR_VERSION = "shadowgraph-collector-v1"
 
 
+def _snippet(text: str, value: str, radius: int = 120) -> str:
+    lowered = text.lower()
+    needle = value.lower()
+    index = lowered.find(needle)
+    if index < 0:
+        return text[: radius * 2]
+    start = max(0, index - radius)
+    end = min(len(text), index + len(value) + radius)
+    return text[start:end]
+
+
 class AllowlistError(ValueError):
     pass
 
@@ -105,6 +116,26 @@ class CollectionPipeline:
         db.add(item)
         db.flush()
 
+        metadata_payload = metadata or {}
+        document = db.scalar(select(models.Document).where(models.Document.raw_item_id == item.id))
+        if not document:
+            document = models.Document(
+                raw_item_id=item.id,
+                investigation_id=metadata_payload.get("investigation_id"),
+                source_id=source.id if source else None,
+                source_type=platform,
+                source_name=source.name if source else metadata_payload.get("sourceName", platform),
+                source_url=source_url,
+                title=item.title,
+                content_hash=content_hash,
+                language=item.language,
+                published_at=item.published_at,
+                collected_at=item.captured_at,
+                metadata_json={"evidence_hash": content_hash, **metadata_payload},
+            )
+            db.add(document)
+            db.flush()
+
         saved_entities: list[models.Entity] = []
         for entity in extracted:
             row = db.scalar(select(models.Entity).where(models.Entity.type == entity["type"], models.Entity.normalized_value == entity["normalized_value"]))
@@ -124,31 +155,47 @@ class CollectionPipeline:
                 db.add(row)
                 db.flush()
             db.merge(models.ItemEntity(item_id=item.id, entity_id=row.id, confidence=entity["confidence"], extraction_method=entity["extraction_method"]))
+            db.merge(models.DocumentEntity(document_id=document.id, entity_id=row.id, confidence=entity["confidence"], context_snippet=_snippet(raw_text, entity["value"])))
             saved_entities.append(row)
-            if entity["type"] == "city":
+            if entity["type"] in {"location", "city"}:
                 db.add(models.Location(city=entity["value_redacted"], latitude=entity["metadata"].get("latitude"), longitude=entity["metadata"].get("longitude"), item_id=item.id, risk_score=risk["score"], category=classification["category"]))
-            if entity["type"] == "crypto_wallet":
+            if entity["type"] in {"wallet", "crypto_wallet"}:
                 chain = "eth" if entity["normalized_value"].startswith("0x") else "tron" if entity["normalized_value"].startswith("t") else "btc"
                 if not db.scalar(select(models.CryptoWallet).where(models.CryptoWallet.address == entity["value"])):
                     db.add(models.CryptoWallet(address=entity["value"], chain=chain, evidence_item_id=item.id))
         db.add(models.RiskScore(item_id=item.id, score=risk["score"], category=classification["category"], reasons=risk["reasons"], evidence={"source_url": source_url, "content_hash": content_hash}, confidence=risk["confidence"], model_version=risk["model_version"]))
+        db.add(models.Classification(document_id=document.id, category=classification["category"], confidence=classification["confidence"], severity=risk["level"], summary=f"Automated classification for {classification['category']}.", risk_signals=classification["signals"], reasoning=risk["reasons"], recommended_next_steps=["Verify source attribution", "Review extracted entities", "Open graph neighborhood"], provider="rules"))
         db.add(models.Evidence(item_id=item.id, evidence_type="text_snapshot", sha256_hash=content_hash, extracted_text_redacted=item.raw_text_redacted[:1200], source_url=source_url, collector_version=COLLECTOR_VERSION))
+        alert = None
         if item.is_flagged:
             primary = saved_entities[0].id if saved_entities else None
-            db.add(
-                models.Alert(
-                    title=f"{classification['category'].replace('_', ' ').title()} indicator",
-                    description="Automated indicator from configured public source. Requires analyst verification.",
-                    severity=severity_from_score(risk["score"]),
-                    category=classification["category"],
-                    risk_score=risk["score"],
-                    confidence=risk["confidence"],
-                    source_id=source.id if source else None,
-                    item_id=item.id,
-                    primary_entity_id=primary,
-                    reason_summary="; ".join(risk["reasons"]),
-                )
+            alert = models.Alert(
+                title=f"{classification['category'].replace('_', ' ').title()} indicator",
+                description="Automated indicator from configured public source. Requires analyst verification.",
+                severity=severity_from_score(risk["score"]),
+                category=classification["category"],
+                risk_score=risk["score"],
+                confidence=risk["confidence"],
+                source_id=source.id if source else None,
+                item_id=item.id,
+                primary_entity_id=primary,
+                reason_summary="; ".join(risk["reasons"]),
             )
+            db.add(alert)
+            db.flush()
+        db.add(models.RiskSignal(
+            investigation_id=metadata_payload.get("investigation_id"),
+            document_id=document.id,
+            alert_id=alert.id if alert else None,
+            category=classification["category"],
+            risk_score=risk["score"],
+            risk_level=risk["level"],
+            title=item.title,
+            snippet=item.raw_text_redacted[:500],
+            source_type=platform,
+            key_entities=[{"id": entity.id, "type": entity.type, "value_redacted": entity.value_redacted} for entity in saved_entities[:10]],
+            risk_factors=risk.get("factors", []),
+        ))
         if source:
             source.items_collected_count += 1
             source.last_sync_status = "completed"

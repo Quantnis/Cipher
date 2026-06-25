@@ -1,21 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  Activity,
-  AlertTriangle,
-  ArrowUpRight,
-  Database,
-  GitBranch,
-  RadioTower,
-  ShieldCheck,
-  Siren,
-  Sparkles,
-  Wallet,
-  Zap
-} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Activity, AlertTriangle, ArrowUpRight, Database, GitBranch, RadioTower, Siren, Wallet, Zap } from "lucide-react";
 import { CategoryChart, RiskTrendChart } from "@/components/charts";
-import { Badge } from "@/components/ui/badge";
+import { BorderBeam } from "@/components/ui/border-beam";
 import { api } from "@/lib/api";
 import type { Alert, CaseRecord } from "@/lib/types";
 import { cn, formatDate } from "@/lib/utils";
@@ -30,182 +18,123 @@ type Summary = {
   top_risky_clusters?: CaseRecord[];
 };
 
-const metricStyles = {
-  signal: {
-    icon: "text-cyan-200 shadow-cyan-500/30",
-    ring: "from-cyan-500/20 via-sky-500/5 to-transparent",
-    trend: "+12% vs last week"
-  },
-  danger: {
-    icon: "text-rose-200 shadow-rose-500/30",
-    ring: "from-rose-500/20 via-red-500/5 to-transparent",
-    trend: "+8 critical events"
-  },
-  cyan: {
-    icon: "text-cyan-200 shadow-cyan-500/30",
-    ring: "from-cyan-500/20 via-blue-500/5 to-transparent",
-    trend: "+19% entity growth"
-  },
-  violet: {
-    icon: "text-violet-200 shadow-violet-500/30",
-    ring: "from-violet-500/20 via-indigo-500/5 to-transparent",
-    trend: "wallet risk delta +4"
-  },
-  amber: {
-    icon: "text-amber-200 shadow-amber-500/30",
-    ring: "from-amber-500/20 via-orange-500/5 to-transparent",
-    trend: "+6 indexed leaks"
-  }
+type MetricTone = "neutral" | "danger" | "intel" | "violet" | "amber";
+
+const metricMeta: Record<MetricTone, { trend: string; icon: string; accent: string }> = {
+  neutral: { trend: "+12% vs last week", icon: "text-zinc-300", accent: "bg-zinc-700" },
+  danger: { trend: "+8 critical events", icon: "text-rose-400", accent: "bg-rose-500" },
+  intel: { trend: "+19% entity growth", icon: "text-cyan-400", accent: "bg-cyan-500" },
+  violet: { trend: "wallet risk delta +4", icon: "text-violet-300", accent: "bg-violet-500" },
+  amber: { trend: "+6 indexed leaks", icon: "text-amber-400", accent: "bg-amber-500" }
 };
 
-const severityMeta = (score: number) => {
-  if (score >= 80) {
-    return {
-      label: "critical",
-      className: "border-rose-400/50 bg-rose-500/10 text-rose-100 shadow-[0_0_24px_rgba(244,63,94,0.18)]"
-    };
-  }
-  if (score >= 50) {
-    return {
-      label: "elevated",
-      className: "border-orange-400/50 bg-orange-500/10 text-orange-100 shadow-[0_0_24px_rgba(249,115,22,0.15)]"
-    };
-  }
-  return {
-    label: "watch",
-    className: "border-cyan-400/40 bg-cyan-500/10 text-cyan-100 shadow-[0_0_20px_rgba(34,211,238,0.12)]"
-  };
-};
-
-function Panel({ className, children }: { className?: string; children: React.ReactNode }) {
-  return (
-    <section
-      className={cn(
-        "relative overflow-hidden rounded-lg border border-zinc-800/60 bg-zinc-900/40 shadow-[0_24px_90px_rgba(0,0,0,0.42)] backdrop-blur-md",
-        "before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_20%_0%,rgba(34,211,238,0.09),transparent_30%),linear-gradient(135deg,rgba(255,255,255,0.055),transparent_22%)]",
-        "after:pointer-events-none after:absolute after:inset-0 after:bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] after:bg-[size:28px_28px] after:opacity-40",
-        className
-      )}
-    >
-      <div className="relative z-10">{children}</div>
-    </section>
-  );
+function Surface({ className, children }: { className?: string; children: React.ReactNode }) {
+  return <section className={cn("relative min-h-0 overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/20 shadow-sm backdrop-blur-md", className)}>{children}</section>;
 }
 
-function SectionHeader({ eyebrow, title, detail }: { eyebrow: string; title: string; detail: string }) {
+function MonoLabel({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <p className={cn("font-mono text-xs tracking-normal text-zinc-500", className)}>{children}</p>;
+}
+
+function SectionTitle({ eyebrow, title, detail }: { eyebrow: string; title: string; detail: string }) {
   return (
-    <div className="flex flex-col gap-1 border-b border-zinc-800/70 px-5 py-4 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-cyan-300/80">{eyebrow}</p>
-        <h2 className="mt-1 text-sm font-semibold uppercase tracking-[0.16em] text-zinc-100">{title}</h2>
+    <div className="mb-3 flex flex-shrink-0 items-start justify-between gap-4">
+      <div className="min-w-0">
+        <MonoLabel className="uppercase tracking-[0.18em]">{eyebrow}</MonoLabel>
+        <h2 className="mt-1 truncate font-sans text-sm font-bold tracking-tight text-zinc-100">{title}</h2>
       </div>
-      <p className="max-w-md text-xs leading-5 text-zinc-500">{detail}</p>
+      <MonoLabel className="hidden max-w-[280px] text-right leading-5 xl:block">{detail}</MonoLabel>
     </div>
   );
 }
 
-function MetricCard({
-  label,
-  value,
-  icon: Icon,
-  variant
-}: {
-  label: string;
-  value: number;
-  icon: React.ElementType;
-  variant: keyof typeof metricStyles;
-}) {
-  const style = metricStyles[variant];
+function MetricCard({ label, value, icon: Icon, tone }: { label: string; value: number; icon: React.ElementType; tone: MetricTone }) {
+  const meta = metricMeta[tone];
   return (
-    <Panel className="min-h-[154px]">
-      <div className={cn("absolute inset-x-0 top-0 h-px bg-gradient-to-r", style.ring)} />
-      <div className="relative z-10 flex h-full flex-col justify-between p-4">
-        <div className="flex items-start justify-between gap-3">
-          <p className="max-w-[9rem] text-xs font-semibold uppercase leading-5 tracking-wider text-zinc-500">{label}</p>
-          <div className="flex size-10 items-center justify-center rounded-md border border-zinc-700/80 bg-black/40 shadow-2xl">
-            <Icon className={cn("size-4 drop-shadow-[0_0_10px_currentColor]", style.icon)} />
+    <Surface className="h-full p-4">
+      <div className="flex h-full min-h-0 items-center justify-between gap-3">
+        <div className="min-w-0">
+          <MonoLabel className="truncate uppercase">{label}</MonoLabel>
+          <div className="mt-1 truncate font-sans text-2xl font-bold tracking-tight text-zinc-100 tabular-nums">{value.toLocaleString()}</div>
+          <div className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-md border border-zinc-800/80 bg-zinc-950/55 px-2 py-1 font-mono text-[11px] text-zinc-500">
+            <span className={cn("size-1.5 flex-shrink-0 rounded-full", meta.accent)} />
+            <ArrowUpRight className="size-3 flex-shrink-0" />
+            <span className="truncate">{meta.trend}</span>
           </div>
         </div>
-        <div>
-          <div className="font-mono text-3xl font-semibold tracking-tight text-white drop-shadow-[0_0_18px_rgba(255,255,255,0.16)]">{value.toLocaleString()}</div>
-          <div className="mt-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
-            <ArrowUpRight className="size-3" />
-            {style.trend}
-          </div>
+        <div className="flex size-9 flex-shrink-0 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-950/60">
+          <Icon className={cn("size-4", meta.icon)} />
         </div>
       </div>
-    </Panel>
+    </Surface>
   );
 }
 
-function RiskScoreBadge({ score }: { score: number }) {
-  const meta = severityMeta(score);
+function RiskBadge({ score }: { score: number }) {
+  const isHigh = score >= 60;
   return (
-    <div className={cn("inline-flex min-w-16 items-center justify-center rounded-md border px-2.5 py-1.5 font-mono text-sm font-semibold", meta.className)}>
-      {score}
-    </div>
+    <span className={cn("inline-flex size-9 items-center justify-center rounded-md font-mono text-xs font-bold tabular-nums", isHigh ? "border border-rose-800/40 bg-rose-950/40 text-rose-400" : "border border-amber-800/40 bg-amber-950/30 text-amber-400")}>{score}</span>
   );
+}
+
+function CodeTag({ children }: { children: React.ReactNode }) {
+  return <code className="mx-0.5 rounded border border-zinc-700/50 bg-zinc-800/40 px-1.5 py-0.5 font-mono text-xs text-zinc-400">{children}</code>;
 }
 
 function HighlightedReason({ text }: { text: string }) {
-  const parts = text.split(/(@[\w.-]+|0x[a-fA-F0-9]{6,}|\bKZ\b|\bKazakhstan\b|\bTelegram\b|\bwallet\b|\bleak\b)/g);
+  const parts = text.split(/(@[\w.-]+|0x[a-fA-F0-9]{6,}|\b(?:\d{1,3}\.){3}\d{1,3}\b|\bKZ\b|\bKazakhstan\b|\bTelegram\b|\bwallet\b|\bleak\b)/g);
   return (
     <span>
       {parts.map((part, index) => {
-        const isToken = /^(?:@[\w.-]+|0x[a-fA-F0-9]{6,}|KZ|Kazakhstan|Telegram|wallet|leak)$/i.test(part);
-        if (!isToken) return <span key={`${part}-${index}`}>{part}</span>;
-        return (
-          <code key={`${part}-${index}`} className="mx-0.5 rounded border border-zinc-700 bg-zinc-800 px-1 py-0.5 font-mono text-xs text-zinc-200">
-            {part}
-          </code>
-        );
+        const isToken = /^(?:@[\w.-]+|0x[a-fA-F0-9]{6,}|(?:\d{1,3}\.){3}\d{1,3}|KZ|Kazakhstan|Telegram|wallet|leak)$/i.test(part);
+        return isToken ? <CodeTag key={`${part}-${index}`}>{part}</CodeTag> : <span key={`${part}-${index}`}>{part}</span>;
       })}
     </span>
   );
 }
 
-function SecurityLogRow({ alert }: { alert: Alert }) {
-  const severity = severityMeta(alert.risk_score);
+function StatusPill({ value }: { value: unknown }) {
+  const normalized = String(value).toLowerCase();
+  const state = normalized.includes("offline") || normalized.includes("down") || normalized.includes("error") ? "error" : normalized.includes("setup") || normalized.includes("warning") ? "warning" : "healthy";
   return (
-    <div className="grid gap-3 border-t border-zinc-800/70 bg-black/10 px-4 py-3 transition-colors hover:bg-cyan-950/10 lg:grid-cols-[92px_140px_1fr_112px_128px] lg:items-center">
-      <div className="flex items-center justify-between lg:block">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-600 lg:hidden">Risk</span>
-        <RiskScoreBadge score={alert.risk_score} />
+    <span className={cn("rounded-md px-2 py-0.5 font-mono text-xs font-bold uppercase tracking-wider", state === "error" && "border border-rose-800/40 bg-rose-950/40 text-rose-400", state === "warning" && "border border-amber-800/40 bg-amber-950/30 text-amber-400", state === "healthy" && "border border-emerald-800/50 bg-emerald-950/35 text-emerald-400")}>{String(value)}</span>
+  );
+}
+
+function HealthBar({ name, value, progress, color = "bg-emerald-500" }: { name: string; value: unknown; progress: number; color?: string }) {
+  return (
+    <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/35 p-3">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <MonoLabel className="truncate uppercase">{name}</MonoLabel>
+        <StatusPill value={value} />
       </div>
-      <div>
-        <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-600">Category</div>
-        <div className="mt-1 text-xs font-semibold uppercase tracking-wider text-zinc-200">{alert.category}</div>
+      <div className="h-1 w-full overflow-hidden rounded-full bg-zinc-800">
+        <div className={cn("h-full rounded-full", color)} style={{ width: `${progress}%` }} />
       </div>
-      <p className="text-sm leading-6 text-zinc-400">
-        <HighlightedReason text={alert.reason_summary} />
-      </p>
-      <Badge variant="outline" className={cn("w-fit uppercase tracking-wider", severity.className)}>
-        {severity.label}
-      </Badge>
-      <div className="font-mono text-xs text-zinc-500">{formatDate(alert.created_at)}</div>
     </div>
   );
 }
 
-function StatusBadge({ value }: { value: unknown }) {
+function AlertRow({ alert }: { alert: Alert }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200">
-      <span className="size-1.5 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.95)] animate-pulse" />
-      {String(value)}
-    </span>
+    <tr className="grid min-w-[820px] grid-cols-[64px_150px_minmax(280px,1fr)_112px_132px] items-center gap-4 border-b border-zinc-800/60 px-4 py-2.5 transition-colors hover:bg-zinc-900/35">
+      <td><RiskBadge score={alert.risk_score} /></td>
+      <td><span className="inline-flex max-w-full rounded-md border border-zinc-700/50 bg-zinc-800/40 px-2 py-1 font-mono text-xs text-zinc-400"><span className="truncate">{alert.category}</span></span></td>
+      <td className="truncate text-sm leading-6 text-zinc-400"><HighlightedReason text={alert.reason_summary} /></td>
+      <td><span className="w-fit rounded-md border border-zinc-800 bg-zinc-950/45 px-2 py-1 font-mono text-xs uppercase text-zinc-500">{alert.status}</span></td>
+      <td className="truncate text-right font-mono text-xs text-zinc-500">{formatDate(alert.created_at)}</td>
+    </tr>
   );
 }
 
-function HealthLine({ name, value, progress }: { name: string; value: unknown; progress: number }) {
+function ClusterRow({ item }: { item: CaseRecord }) {
   return (
-    <div className="rounded-md border border-zinc-800/70 bg-black/20 p-3">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <span className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-400">{name}</span>
-        <StatusBadge value={value} />
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800/80 bg-zinc-950/35 p-3">
+      <div className="min-w-0">
+        <div className="truncate font-sans text-sm font-bold tracking-tight text-zinc-100">{item.title}</div>
+        <MonoLabel className="mt-1 uppercase">CASE-{String(item.id).padStart(4, "0")} / {item.status}</MonoLabel>
       </div>
-      <div className="h-1 overflow-hidden rounded-full bg-zinc-800/80">
-        <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-cyan-300 to-sky-500 shadow-[0_0_16px_rgba(34,211,238,0.65)] animate-pulse" style={{ width: `${progress}%` }} />
-      </div>
+      <RiskBadge score={item.overall_risk_score} />
     </div>
   );
 }
@@ -224,123 +153,81 @@ export default function DashboardPage() {
   }, []);
 
   const stats = [
-    { label: "Total crawled sources", value: summary?.total_crawled_sources ?? 0, icon: RadioTower, variant: "signal" as const },
-    { label: "High-risk alerts", value: summary?.high_risk_alerts ?? 0, icon: AlertTriangle, variant: "danger" as const },
-    { label: "New entities", value: summary?.new_entities_discovered ?? 0, icon: GitBranch, variant: "cyan" as const },
-    { label: "High-risk wallets", value: summary?.high_risk_wallets ?? 0, icon: Wallet, variant: "violet" as const },
-    { label: "Leak mentions", value: summary?.leak_mentions ?? 0, icon: Database, variant: "amber" as const }
+    { label: "Total crawled sources", value: summary?.total_crawled_sources ?? 0, icon: RadioTower, tone: "neutral" as const },
+    { label: "High-risk alerts", value: summary?.high_risk_alerts ?? 0, icon: AlertTriangle, tone: "danger" as const },
+    { label: "New entities", value: summary?.new_entities_discovered ?? 0, icon: GitBranch, tone: "intel" as const },
+    { label: "High-risk wallets", value: summary?.high_risk_wallets ?? 0, icon: Wallet, tone: "violet" as const },
+    { label: "Leak mentions", value: summary?.leak_mentions ?? 0, icon: Database, tone: "amber" as const }
   ];
 
-  const healthEntries = Object.entries(summary?.system_health ?? { api: "healthy", crawler: "active", database: "healthy" });
+  const healthEntries = useMemo(() => Object.entries(summary?.system_health ?? { api: "healthy", crawler: "active", database: "healthy" }), [summary]);
+  const visibleAlerts = alerts.slice(0, 64);
+  const clusters = summary?.top_risky_clusters ?? [];
 
   return (
-    <div className="relative -m-4 min-h-[calc(100vh-4rem)] overflow-hidden bg-[#030712] p-4 text-zinc-100 lg:-m-5 lg:p-5">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_8%,rgba(34,211,238,0.16),transparent_28%),radial-gradient(circle_at_82%_0%,rgba(99,102,241,0.16),transparent_26%),linear-gradient(180deg,#030712_0%,#050816_54%,#020617_100%)]" />
-      <div className="pointer-events-none absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(148,163,184,0.055)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.04)_1px,transparent_1px)] [background-size:36px_36px]" />
+    <div className="flex h-full min-h-0 w-full flex-col gap-6 overflow-hidden text-zinc-100">
+      <section className="grid h-24 w-full flex-shrink-0 grid-cols-5 gap-4">
+        {stats.map((stat) => <MetricCard key={stat.label} {...stat} />)}
+      </section>
 
-      <div className="relative z-10 space-y-5">
-        <header className="flex flex-col gap-4 border-b border-zinc-800/80 pb-5 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="border-cyan-400/30 bg-cyan-500/10 text-cyan-200">Analyst workspace</Badge>
-              <Badge variant="outline" className="border-zinc-700 bg-black/30 text-zinc-400">B2G Command Layer</Badge>
-            </div>
-            <h1 className="text-2xl font-semibold uppercase tracking-[0.18em] text-white md:text-3xl">ShadowGraph KZ Overview</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-500">
-              Executive cyber-intelligence posture across configured sources, risk velocity, entity emergence, wallet exposure, leak mentions, and operational service health.
-            </p>
+      <section className="grid min-h-0 w-full flex-1 grid-cols-3 gap-6">
+        <Surface className="flex h-full min-h-0 flex-col p-5 col-span-2">
+          <SectionTitle eyebrow="Signal analytics" title="Risk Trend" detail="Recharts scales inside h-full min-h-0 without forcing document scroll." />
+          <div className="min-h-0 flex-1 rounded-lg border border-zinc-800/70 bg-zinc-950/35 p-3">
+            <RiskTrendChart data={riskTrends} />
           </div>
-          <div className="grid grid-cols-3 gap-2 rounded-lg border border-zinc-800/70 bg-black/30 p-2 font-mono text-xs text-zinc-400">
-            <div className="rounded-md bg-zinc-900/60 px-3 py-2"><span className="block text-[10px] uppercase tracking-wider text-zinc-600">Mode</span>LIVE</div>
-            <div className="rounded-md bg-zinc-900/60 px-3 py-2"><span className="block text-[10px] uppercase tracking-wider text-zinc-600">Region</span>KZ</div>
-            <div className="rounded-md bg-zinc-900/60 px-3 py-2"><span className="block text-[10px] uppercase tracking-wider text-zinc-600">Tier</span>B2G</div>
+        </Surface>
+
+        <Surface className="flex h-full min-h-0 flex-col p-5">
+          <SectionTitle eyebrow="Classifier mix" title="Categories" detail="Desaturated category volume by active alert class." />
+          <div className="min-h-0 flex-1 rounded-lg border border-zinc-800/70 bg-zinc-950/35 p-3">
+            <CategoryChart data={categories} />
           </div>
-        </header>
+        </Surface>
+      </section>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          {stats.map((stat) => (
-            <MetricCard key={stat.label} {...stat} />
-          ))}
-        </div>
-
-        <div className="grid gap-4 xl:grid-cols-[1.1fr_.9fr]">
-          <Panel>
-            <SectionHeader eyebrow="Signal analytics" title="Risk trend" detail="Rolling normalized risk scores from collected observations." />
-            <div className="p-4"><RiskTrendChart data={riskTrends} /></div>
-          </Panel>
-          <Panel>
-            <SectionHeader eyebrow="Classifier mix" title="Category distribution" detail="Open alert distribution by threat category and operational domain." />
-            <div className="p-4"><CategoryChart data={categories} /></div>
-          </Panel>
-        </div>
-
-        <div className="grid gap-4 xl:grid-cols-[1fr_380px]">
-          <Panel>
-            <SectionHeader eyebrow="Advanced threat feed" title="Recent alerts" detail="Security-log view with strict severity scoring and highlighted cyber entities." />
-            <div className="grid grid-cols-[92px_140px_1fr_112px_128px] border-t border-zinc-800/70 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-600 max-lg:hidden">
-              <span>Risk</span><span>Category</span><span>Reason</span><span>Severity</span><span>Seen</span>
-            </div>
-            {alerts.length === 0 ? (
-              <div className="border-t border-zinc-800/70 px-5 py-10 text-center text-sm text-zinc-500">
-                No real observations yet. Add a source or paste manual text in Sources to begin ingestion.
-              </div>
-            ) : (
-              alerts.slice(0, 8).map((alert) => <SecurityLogRow key={alert.id} alert={alert} />)
-            )}
-          </Panel>
-
-          <Panel>
-            <SectionHeader eyebrow="Ops telemetry" title="System health" detail="Service readiness with pulse-confirmed operational status." />
-            <div className="space-y-3 p-4">
-              {healthEntries.map(([key, value], index) => (
-                <HealthLine key={key} name={key} value={value} progress={key === "redaction" ? 100 : 92 - index * 4} />
-              ))}
-
-              <div className="rounded-md border border-cyan-400/20 bg-cyan-500/5 p-4 text-sm leading-6 text-zinc-400">
-                <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200">
-                  <ShieldCheck className="size-4" /> Human verification gate
-                </div>
-                Automated indicators require analyst validation. Missing integrations produce setup states instead of synthetic findings.
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-600">
-                  <Siren className="size-3 text-rose-300" /> High-risk clusters
-                </div>
-                {(summary?.top_risky_clusters ?? []).slice(0, 5).map((item) => (
-                  <div key={item.id} className="flex items-center justify-between gap-3 rounded-md border border-zinc-800/70 bg-black/20 p-3">
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-medium text-zinc-200">{item.title}</div>
-                      <div className="mt-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-zinc-600">
-                        <Zap className="size-3 text-amber-300" /> Case #{item.id}
-                      </div>
-                    </div>
-                    <RiskScoreBadge score={item.overall_risk_score} />
-                  </div>
-                ))}
-                {(summary?.top_risky_clusters ?? []).length === 0 && (
-                  <div className="rounded-md border border-zinc-800/70 bg-black/20 p-3 text-sm text-zinc-500">
-                    No active case clusters in the current summary window.
-                  </div>
+      <section className="grid h-[35vh] min-h-0 w-full flex-shrink-0 grid-cols-3 gap-6">
+        <Surface className="col-span-2 flex h-full min-h-0 flex-col overflow-hidden p-0">
+          <BorderBeam size={360} duration={18} borderWidth={1} colorFrom="#3f3f46" colorTo="#e11d48" delay={4} />
+          <div className="flex-shrink-0 p-5 pb-3">
+            <SectionTitle eyebrow="Advanced threat feed" title="Recent Alerts" detail="Only tbody scrolls; shell and page stay fixed." />
+          </div>
+          <div className="min-h-0 flex-1 overflow-x-auto">
+            <table className="flex h-full min-w-[820px] flex-col overflow-hidden">
+              <thead className="flex-shrink-0 border-y border-zinc-800/60 bg-zinc-950/35">
+                <tr className="grid grid-cols-[64px_150px_minmax(280px,1fr)_112px_132px] gap-4 px-4 py-2 font-mono text-xs uppercase tracking-normal text-zinc-500">
+                  <th className="text-left font-medium">Risk</th><th className="text-left font-medium">Category</th><th className="text-left font-medium">Reason</th><th className="text-left font-medium">Status</th><th className="text-right font-medium">Timestamp</th>
+                </tr>
+              </thead>
+              <tbody className="block min-h-0 flex-1 overflow-y-auto pr-1">
+                {visibleAlerts.length === 0 ? (
+                  <tr className="block px-5 py-12 text-center font-mono text-xs text-zinc-500"><td className="block">No observations in the current window.</td></tr>
+                ) : (
+                  visibleAlerts.map((alert) => <AlertRow key={alert.id} alert={alert} />)
                 )}
-              </div>
+              </tbody>
+            </table>
+          </div>
+        </Surface>
 
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="rounded-md border border-zinc-800/70 bg-black/20 p-3">
-                  <Sparkles className="mb-2 size-4 text-cyan-200" />
-                  <div className="font-mono text-lg text-white">99.7%</div>
-                  <div className="text-[10px] uppercase tracking-wider text-zinc-600">uptime</div>
-                </div>
-                <div className="rounded-md border border-zinc-800/70 bg-black/20 p-3">
-                  <Activity className="mb-2 size-4 text-emerald-200" />
-                  <div className="font-mono text-lg text-white">42ms</div>
-                  <div className="text-[10px] uppercase tracking-wider text-zinc-600">api p95</div>
-                </div>
-              </div>
+        <Surface className="flex h-full min-h-0 flex-col overflow-hidden p-5">
+          <SectionTitle eyebrow="Ops telemetry" title="System Health" detail="Load bars and clusters fit inside the fixed right rail." />
+          <div className="grid flex-shrink-0 gap-3">
+            {healthEntries.slice(0, 3).map(([key, value], index) => <HealthBar key={key} name={key} value={value} progress={96 - index * 7} color={index === 1 ? "bg-cyan-500" : "bg-emerald-500"} />)}
+          </div>
+          <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+            <div className="mb-2 flex items-center gap-2 font-mono text-xs uppercase tracking-normal text-zinc-500"><Siren className="size-3.5 text-rose-400" /> Risk clusters</div>
+            <div className="grid gap-2">
+              {clusters.slice(0, 8).map((item) => <ClusterRow key={item.id} item={item} />)}
+              {clusters.length === 0 ? <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/35 p-3 font-mono text-xs text-zinc-500">No active high-risk clusters.</div> : null}
             </div>
-          </Panel>
-        </div>
-      </div>
+          </div>
+          <div className="mt-4 grid flex-shrink-0 grid-cols-2 gap-3">
+            <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/35 p-3"><Activity className="mb-2 size-4 text-emerald-400" /><div className="font-sans text-lg font-bold tracking-tight text-zinc-100">99.7%</div><MonoLabel className="uppercase">uptime</MonoLabel></div>
+            <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/35 p-3"><Zap className="mb-2 size-4 text-cyan-400" /><div className="font-sans text-lg font-bold tracking-tight text-zinc-100">42ms</div><MonoLabel className="uppercase">api p95</MonoLabel></div>
+          </div>
+        </Surface>
+      </section>
     </div>
   );
 }

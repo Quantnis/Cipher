@@ -1,0 +1,22 @@
+[
+  {
+    "title": "Public Telegram demo post",
+    "sourceUrl": "https://t.me/sample_vape_kz/1001",
+    "content": "Public Telegram synthetic post mentions вейп delivery Алматы @sample_vape_kz +77000000000 wallet TQ7DemoWallet000000000000000001.",
+    "metadata": {
+      "synthetic": true,
+      "message_id": 1001,
+      "channel": "@sample_vape_kz"
+    }
+  },
+  {
+    "title": "Public Telegram drop demo",
+    "sourceUrl": "https://t.me/drop_alert_demo/1002",
+    "content": "Public Telegram synthetic post: дроп карта перевод @drop_alert_demo +77000000001 0x1111111111111111111111111111111111111111 Шымкент.",
+    "metadata": {
+      "synthetic": true,
+      "message_id": 1002,
+      "channel": "@drop_alert_demo"
+    }
+  }
+]

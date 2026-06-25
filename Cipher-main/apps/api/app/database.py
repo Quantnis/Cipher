@@ -24,6 +24,9 @@ def init_db() -> None:
         "CREATE INDEX IF NOT EXISTS ix_alerts_severity_created ON alerts (severity, created_at)",
         "CREATE INDEX IF NOT EXISTS ix_locations_city_category ON locations (city, category)",
         "CREATE INDEX IF NOT EXISTS ix_graph_edges_nodes ON graph_edges (source_node_id, target_node_id)",
+        "CREATE INDEX IF NOT EXISTS ix_documents_investigation_collected ON documents (investigation_id, collected_at)",
+        "CREATE INDEX IF NOT EXISTS ix_risk_signals_score_level ON risk_signals (risk_score, risk_level)",
+        "CREATE INDEX IF NOT EXISTS ix_investigation_jobs_investigation_status ON investigation_jobs (investigation_id, status)",
     ]
     with engine.begin() as connection:
         for statement in indexes:

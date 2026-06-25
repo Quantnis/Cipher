@@ -23,16 +23,32 @@ KZ_CITIES = {
 }
 
 RISK_KEYWORDS = {
-    "illegal_vape_sales": ["вейп", "одноразка", "жидкость", "под", "жижа", "оптом", "vape"],
-    "alcohol_smuggling": ["акциз", "алкоголь", "контрафакт", "оптом алкоголь"],
-    "narcotics_advertising": ["клад", "закладка", "курьер", "район", "доставка"],
-    "dropper_recruitment": ["дроп", "карта", "обнал", "перевод", "drop", "cashout"],
-    "data_leak_mentions": ["база", "слив", "иин", "номер", "пробив", "leak", "database"],
-    "phishing": ["фишинг", "login", "credential", "clone", "phishing"],
-    "suspicious_crypto_wallet": ["usdt", "btc", "eth", "trc20", "wallet", "кошелек"],
-    "suspicious_telegram_shop": ["telegram", "телеграм", "канал", "магазин", "витрина"],
+    "suspected_illicit_vape_sales": ["вейп", "одноразка", "жидкость", "под", "жижа", "оптом", "vape", "delivery"],
+    "suspected_illicit_alcohol_sales": ["акциз", "алкоголь", "контрафакт", "оптом алкоголь"],
+    "suspected_narcotics_market": ["клад", "закладка", "нарко", "район", "тайник"],
+    "suspected_drop_account_recruitment": ["дроп", "карта", "обнал", "перевод", "drop", "cashout", "account rental"],
+    "suspected_crypto_fraud": ["usdt", "btc", "eth", "trc20", "wallet", "кошелек", "crypto", "крипто"],
+    "suspected_database_leak": ["база", "слив", "иин", "номер", "пробив", "leak", "database", "dump"],
+    "suspected_document_forgery": ["справка", "удостоверение", "паспорт", "диплом", "document", "forgery", "поддел"],
+    "suspected_payment_fraud": ["фишинг", "login", "credential", "clone", "phishing", "chargeback", "carding"],
+    "suspicious_marketplace": ["telegram", "телеграм", "канал", "магазин", "витрина", "market", "escrow"],
 }
 
+CATEGORY_ALIASES = {
+    "illegal_vape_sales": "suspected_illicit_vape_sales",
+    "alcohol_smuggling": "suspected_illicit_alcohol_sales",
+    "narcotics_advertising": "suspected_narcotics_market",
+    "drug_related": "suspected_narcotics_market",
+    "dropper_recruitment": "suspected_drop_account_recruitment",
+    "data_leak_mentions": "suspected_database_leak",
+    "data_leak": "suspected_database_leak",
+    "phishing": "suspected_payment_fraud",
+    "suspicious_payment_infrastructure": "suspected_payment_fraud",
+    "suspicious_crypto_wallet": "suspected_crypto_fraud",
+    "suspicious_telegram_shop": "suspicious_marketplace",
+    "unknown": "suspicious_but_unclear",
+    "unclassified": "benign",
+}
 
 def sha256(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
@@ -45,8 +61,11 @@ def redact_value(entity_type: str, value: str) -> str:
             return f"+{digits[:1]} {digits[1:4]} *** ** {digits[-2:]}"
     if entity_type == "iin_pattern_redacted":
         return f"********{value[-4:]}"
-    if entity_type in {"crypto_wallet", "bank_card_hint"} and len(value) > 14:
+    if entity_type in {"wallet", "crypto_wallet", "bank_card_hint", "payment_method"} and len(value) > 14:
         return f"{value[:6]}...{value[-4:]}"
+    if entity_type == "email" and "@" in value:
+        left, right = value.split("@", 1)
+        return f"{left[:2]}***@{right}"
     return value
 
 
@@ -68,14 +87,18 @@ class LanguageDetector:
 
 class EntityExtractor:
     PATTERNS = [
-        ("telegram_username", r"(?<!\w)@[a-zA-Z0-9_]{5,32}"),
-        ("telegram_channel", r"https?://t\.me/[a-zA-Z0-9_]{5,64}"),
+        ("telegram_handle", r"(?<!\w)@[a-zA-Z0-9_]{5,32}"),
+        ("telegram_handle", r"https?://t\.me/[a-zA-Z0-9_]{5,64}"),
+        ("email", r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+"),
         ("url", r"https?://[^\s<>'\"]+"),
         ("phone", r"\+?7[\s()-]*\d{3}[\s()-]*\d{3}[\s()-]*\d{2}[\s()-]*\d{2}"),
         ("phone", r"\+?7[\s()-]*\d{3}[\s()-]*\*{2,4}[\s()-]*\d{2,4}"),
-        ("crypto_wallet", r"\b0x[a-fA-F0-9]{16,40}\b|\bT[A-Za-z0-9]{16,40}\b|\bbc1[A-Za-z0-9]{12,74}\b|\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\b"),
+        ("wallet", r"\b0x[a-fA-F0-9]{16,40}\b|\bT[A-Za-z0-9]{16,40}\b|\bbc1[A-Za-z0-9]{12,74}\b|\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\b"),
+        ("payment_method", r"\b(?:kaspi|каспи|halyk|халык|usdt|trc20|карта|банк|перевод)\b"),
+        ("payment_method", r"\b(?:\d{4}[ -]?){2,3}\*{2,4}(?:[ -]?\d{2,4})?\b"),
         ("price", r"\b\d[\d\s.,]{2,12}\s?(?:₸|тг|kzt|usd|usdt|\$)\b"),
         ("iin_pattern_redacted", r"(?<!\d)\d{12}(?!\d)"),
+        ("alias", r"(?i)(?:aka|alias|ник|username|user)[:\s]+[a-zA-Z0-9_.-]{4,32}"),
     ]
 
     def extract(self, text: str) -> list[dict]:
@@ -85,6 +108,10 @@ class EntityExtractor:
             for match in re.findall(pattern, text, flags=re.IGNORECASE):
                 value = match.strip(".,);]")
                 self._append(entities, seen, entity_type, value, 0.9, "regex")
+                if entity_type == "telegram_handle" and value.lower().startswith("http"):
+                    value = "@" + value.rstrip("/").split("/")[-1]
+                if entity_type == "alias" and ":" in value:
+                    value = value.split(":", 1)[1].strip()
                 if entity_type == "url":
                     domain = urlparse(value).netloc.lower().removeprefix("www.")
                     if domain:
@@ -92,27 +119,38 @@ class EntityExtractor:
         lowered = text.lower()
         for key, (city, lat, lon) in KZ_CITIES.items():
             if key in lowered:
-                self._append(entities, seen, "city", city, 0.86, "dictionary", {"latitude": lat, "longitude": lon})
+                self._append(entities, seen, "location", city, 0.86, "dictionary", {"latitude": lat, "longitude": lon})
         for category, keywords in RISK_KEYWORDS.items():
             for keyword in keywords:
                 if keyword.lower() in lowered:
                     self._append(entities, seen, "keyword", keyword, 0.78, "dictionary", {"category": category})
-                    self._append(entities, seen, "product" if "vape" in category or "narcotics" in category else "keyword", category, 0.72, "classifier_hint")
+                    self._append(entities, seen, "keyword", category, 0.72, "classifier_hint", {"category": category})
                     break
         return entities
 
     def _append(self, entities: list[dict], seen: set[tuple[str, str]], entity_type: str, value: str, confidence: float, method: str, metadata: dict | None = None) -> None:
         legacy = {
+            "telegram_handle": "TelegramHandle",
             "telegram_username": "TelegramHandle",
             "telegram_channel": "TelegramChannel",
             "phone": "Phone",
+            "email": "Email",
+            "wallet": "CryptoWallet",
             "crypto_wallet": "CryptoWallet",
+            "location": "City",
             "city": "City",
             "url": "Url",
             "domain": "Domain",
             "price": "Price",
+            "payment_method": "PaymentMethod",
+            "alias": "Alias",
         }.get(entity_type, entity_type)
         normalized = value.lower().strip()
+        if entity_type == "phone":
+            digits = re.sub(r"\D", "", value)
+            normalized = "+" + digits if digits.startswith("7") else digits
+        if entity_type == "telegram_handle" and not normalized.startswith("@"):
+            normalized = "@" + normalized.rsplit("/", 1)[-1]
         key = (entity_type, normalized)
         if key in seen:
             return
@@ -137,11 +175,12 @@ class CategoryClassifier:
     def classify(self, text: str) -> dict:
         lowered = text.lower()
         scores = {category: sum(1 for kw in keywords if kw.lower() in lowered) for category, keywords in RISK_KEYWORDS.items()}
-        category = max(scores, key=scores.get) if scores else "unknown"
+        category = max(scores, key=scores.get) if scores else "suspicious_but_unclear"
         if scores.get(category, 0) == 0:
-            category = "unclassified"
-        signals = [key for key, value in scores.items() if value > 0]
-        return {"category": category, "confidence": min(0.96, 0.48 + scores.get(category, 0) * 0.12), "signals": signals}
+            category = "benign"
+        category = CATEGORY_ALIASES.get(category, category)
+        signals = [CATEGORY_ALIASES.get(key, key) for key, value in scores.items() if value > 0]
+        return {"category": category, "confidence": min(0.96, 0.48 + scores.get(category, 0) * 0.12), "signals": sorted(set(signals))}
 
 
 class SimilarityClusterer:

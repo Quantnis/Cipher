@@ -6,9 +6,8 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function riskTone(score: number) {
-  if (score >= 85) return "critical";
-  if (score >= 70) return "high";
-  if (score >= 45) return "medium";
+  if (score >= 70) return "critical";
+  if (score >= 40) return "high";
   return "low";
 }
 

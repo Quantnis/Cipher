@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import init_db
-from app.routers import admin, auth, cases, crawler, dashboard, entities, evidence, fingerprint, graph, mvp, osint, reports, sources, threats
+from app.routers import admin, audit, auth, cases, crawler, dashboard, entities, evidence, fingerprint, graph, investigations, mvp, osint, reports, signals, sources, threats
 from app.services.repository import repo
 
 app = FastAPI(
@@ -22,6 +22,9 @@ app.add_middleware(
 
 for router in [
     auth.router,
+    investigations.router,
+    signals.router,
+    audit.router,
     dashboard.router,
     sources.router,
     crawler.router,

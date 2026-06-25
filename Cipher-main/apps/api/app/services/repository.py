@@ -91,6 +91,12 @@ class DatabaseRepository:
         "users": models.User,
         "sources": models.Source,
         "jobs": models.CollectionJob,
+        "investigations": models.Investigation,
+        "investigation_jobs": models.InvestigationJob,
+        "documents": models.Document,
+        "classifications": models.Classification,
+        "risk_signals": models.RiskSignal,
+        "connector_configs": models.ConnectorConfig,
         "alerts": models.Alert,
         "entities": models.Entity,
         "evidence": models.Evidence,
@@ -149,6 +155,15 @@ class DatabaseRepository:
                         models.RiskWeight(name="freshness", weight=15, description="Recently captured or published signal"),
                         models.RiskWeight(name="graph_connectivity", weight=15, description="Repeated entities and cross-source graph links"),
                         models.RiskWeight(name="source_reliability", weight=10, description="Configured legal source quality and provenance"),
+                    ]
+                )
+            if not db.scalar(select(models.ConnectorConfig.id).limit(1)):
+                db.add_all(
+                    [
+                        models.ConnectorConfig(connector_id="mock_web", name="Mock public web dataset", type="web", enabled=True, health_status="ready"),
+                        models.ConnectorConfig(connector_id="mock_telegram", name="Mock public Telegram dataset", type="telegram", enabled=True, health_status="ready"),
+                        models.ConnectorConfig(connector_id="mock_darknet_authorized", name="Mock authorized darknet dataset", type="darknet_authorized", enabled=True, health_status="ready"),
+                        models.ConnectorConfig(connector_id="manual_text", name="Manual evidence collector", type="manual", enabled=True, health_status="ready"),
                     ]
                 )
             if not db.scalar(select(models.SlangTerm.id).limit(1)):

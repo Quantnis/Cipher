@@ -1,59 +1,75 @@
 "use client";
 
-import { useState } from "react";
-import { Bitcoin, DatabaseZap, Globe2, Radar, Search, ShieldAlert } from "lucide-react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { ArrowRight, FileSearch, GitBranch, Loader2, Search, ShieldAlert, Signal, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { RiskBadge } from "@/components/risk-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/neon-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import type { InvestigationResult } from "@/lib/types";
+import { formatDate } from "@/lib/utils";
 
-const tabs = [
-  { id: "crypto", label: "Crypto Tracker", icon: Bitcoin },
-  { id: "leaks", label: "Leak Scanner", icon: DatabaseZap },
-  { id: "domain", label: "Domain Intel", icon: Globe2 },
-  { id: "social", label: "Social Scanner", icon: Radar }
+const routeOptions = [
+  ["auto", "Auto route"],
+  ["web_search", "Web search / crawl"],
+  ["telegram_public", "Telegram public"],
+  ["darknet_authorized", "Authorized mock darknet"],
+  ["entity_lookup", "Entity lookup"],
+  ["crypto_wallet_lookup", "Crypto wallet"],
+  ["leak_mention_lookup", "Leak mention"],
+  ["mixed_full_scan", "Mixed full scan"],
+  ["manual_text_analysis", "Manual text analysis"]
 ] as const;
 
-type TabId = (typeof tabs)[number]["id"];
+const categories = [
+  "",
+  "suspected_illicit_vape_sales",
+  "suspected_illicit_alcohol_sales",
+  "suspected_narcotics_market",
+  "suspected_drop_account_recruitment",
+  "suspected_crypto_fraud",
+  "suspected_database_leak",
+  "suspected_document_forgery",
+  "suspected_payment_fraud",
+  "suspicious_marketplace",
+  "suspicious_but_unclear",
+  "benign"
+];
 
-function JsonPanel({ value }: { value: unknown }) {
-  return <pre className="max-h-[520px] overflow-auto rounded-md border border-zinc-800/70 bg-black/35 p-4 font-mono text-xs leading-6 text-zinc-300">{JSON.stringify(value, null, 2)}</pre>;
-}
-
-function ResultCards({ result }: { result: any }) {
-  if (!result || Object.keys(result).length === 0) return <div className="rounded-md border border-zinc-800/70 bg-black/25 p-6 text-sm text-zinc-500">Run a query to populate this intelligence panel.</div>;
-  return (
-    <div className="space-y-4">
-      {typeof result.risk_score === "number" ? <div className="flex items-center justify-between rounded-md border border-rose-400/25 bg-rose-500/10 p-4"><span className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-500">Risk score</span><span className="font-mono text-3xl font-semibold text-white">{result.risk_score}</span></div> : null}
-      {Array.isArray(result.risk_tags) ? <div className="flex flex-wrap gap-2">{result.risk_tags.map((tag: string) => <Badge key={tag} variant="warning">{tag}</Badge>)}</div> : null}
-      {Array.isArray(result.breaches) ? <div className="grid gap-2">{result.breaches.length === 0 ? <div className="rounded-md border border-zinc-800/70 bg-black/25 p-3 text-sm text-zinc-500">No breach rows returned.</div> : result.breaches.map((item: any) => <div key={`${item.name}-${item.date}`} className="rounded-md border border-zinc-800/70 bg-black/25 p-3"><div className="font-semibold text-zinc-100">{item.name}</div><div className="font-mono text-xs text-zinc-500">{item.date}</div><div className="mt-2 flex flex-wrap gap-2">{(item.data_classes ?? []).map((klass: string) => <Badge key={klass} variant="outline">{klass}</Badge>)}</div></div>)}</div> : null}
-      {Array.isArray(result.matches) ? <div className="grid gap-2">{result.matches.map((item: any, index: number) => <div key={index} className="rounded-md border border-zinc-800/70 bg-black/25 p-3"><div className="mb-1 flex items-center justify-between"><span className="font-semibold text-zinc-100">{item.channel}</span><span className="font-mono text-xs text-zinc-600">{item.timestamp ?? "n/a"}</span></div><p className="text-sm leading-6 text-zinc-400">{item.text_redacted}</p><div className="mt-2 flex flex-wrap gap-2">{(item.entities ?? []).map((entity: string) => <code key={entity} className="rounded border border-zinc-700 bg-zinc-800 px-1.5 py-0.5 font-mono text-xs text-cyan-100">{entity}</code>)}</div></div>)}</div> : null}
-      <JsonPanel value={result} />
-    </div>
-  );
+function asNumber(value: unknown) {
+  const number = Number(value ?? 0);
+  return Number.isFinite(number) ? number : 0;
 }
 
 export default function OsintPage() {
-  const [active, setActive] = useState<TabId>("crypto");
-  const [wallet, setWallet] = useState("0x0000000000000000000000000000000000000000");
-  const [chain, setChain] = useState("auto");
-  const [indicator, setIndicator] = useState("+77001234567");
-  const [domain, setDomain] = useState("example.org");
-  const [social, setSocial] = useState("вейп алкоголь дропы крипто");
+  const [input, setInput] = useState("vape delivery Almaty telegram usdt");
+  const [route, setRoute] = useState("auto");
+  const [category, setCategory] = useState("");
+  const [maxResults, setMaxResults] = useState(24);
+  const [threshold, setThreshold] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>({});
+  const [result, setResult] = useState<InvestigationResult | null>(null);
 
-  async function run() {
+  const topSignal = useMemo(() => [...(result?.signals ?? [])].sort((a, b) => asNumber(b.risk_score) - asNumber(a.risk_score))[0], [result]);
+
+  async function runInvestigation() {
     setLoading(true);
     try {
-      if (active === "crypto") setResult(await api.osintCrypto(wallet, chain));
-      if (active === "leaks") setResult(await api.osintLeaks(indicator));
-      if (active === "domain") setResult(await api.osintDomain(domain));
-      if (active === "social") setResult(await api.osintSocial(social));
+      const payload = await api.createInvestigation({
+        input_text: input,
+        source_mode: route,
+        category: category || undefined,
+        max_results: maxResults,
+        risk_threshold: threshold,
+        run_immediately: true
+      });
+      setResult(payload);
     } finally {
       setLoading(false);
     }
@@ -61,42 +77,108 @@ export default function OsintPage() {
 
   return (
     <>
-      <PageHeader title="OSINT Intelligence" description="Authorized enrichment console for crypto wallets, breach exposure, domains, and public social indicators. All keys stay on the backend." />
-      <div className="grid gap-4 xl:grid-cols-[390px_1fr]">
+      <PageHeader
+        title="New Investigation"
+        description="Run a legally bounded OSINT investigation across public web, public Telegram mock data, authorized mock darknet samples, wallet/entity lookup, and manual evidence."
+      />
+      <div className="grid min-h-0 gap-4 xl:grid-cols-[420px_1fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Collection Modules</CardTitle>
-            <CardDescription>Blockchair, HIBP, RDAP/DNS, and Telegram Bot API backend adapters.</CardDescription>
+            <CardTitle>Investigation input</CardTitle>
+            <CardDescription>Auto-router infers the route. Analysts can override it when scope is known.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-2">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button key={tab.id} onClick={() => { setActive(tab.id); setResult({}); }} className={cn("flex items-center gap-3 rounded-md border px-3 py-3 text-left transition", active === tab.id ? "border-cyan-400/40 bg-cyan-500/10 text-cyan-100" : "border-zinc-800/70 bg-black/25 text-zinc-500 hover:border-cyan-400/25 hover:text-zinc-200")}>
-                    <Icon className="size-4" />
-                    <span className="text-sm font-semibold uppercase tracking-[0.14em]">{tab.label}</span>
-                  </button>
-                );
-              })}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Free-text, URL, handle, wallet, phone, or evidence</label>
+              <Textarea value={input} onChange={(event) => setInput(event.target.value)} className="min-h-32" />
             </div>
-
-            {active === "crypto" ? <div className="space-y-3"><Input value={wallet} onChange={(e) => setWallet(e.target.value)} placeholder="BTC/ETH/TRX wallet address" /><Select value={chain} onChange={(e) => setChain(e.target.value)}><option value="auto">Auto detect</option><option value="bitcoin">Bitcoin</option><option value="ethereum">Ethereum</option><option value="tron">TRON / USDT TRC20</option></Select></div> : null}
-            {active === "leaks" ? <Input value={indicator} onChange={(e) => setIndicator(e.target.value)} placeholder="email or +7 phone" /> : null}
-            {active === "domain" ? <Input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="domain or URL" /> : null}
-            {active === "social" ? <Input value={social} onChange={(e) => setSocial(e.target.value)} placeholder="username or keywords" /> : null}
-
-            <Button className="w-full" variant="solid" onClick={run} disabled={loading}><Search data-icon="inline-start" /> {loading ? "Running..." : "Run OSINT query"}</Button>
-            <div className="rounded-md border border-cyan-400/20 bg-cyan-500/5 p-4 text-sm leading-6 text-zinc-400">
-              <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200"><ShieldAlert className="size-4" /> Legal guardrail</div>
-              Use only public/legal sources and analyst-approved indicators. Raw PII is redacted or represented by hashes in downstream evidence.
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Source mode</label>
+                <Select value={route} onChange={(event) => setRoute(event.target.value)}>
+                  {routeOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Category hint</label>
+                <Select value={category} onChange={(event) => setCategory(event.target.value)}>
+                  {categories.map((item) => <option key={item || "auto"} value={item}>{item || "Auto classify"}</option>)}
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Max results</label>
+                <Input type="number" min={1} max={100} value={maxResults} onChange={(event) => setMaxResults(Number(event.target.value))} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-[0.18em] text-ink-muted">Risk threshold</label>
+                <Input type="number" min={0} max={100} value={threshold} onChange={(event) => setThreshold(Number(event.target.value))} />
+              </div>
+            </div>
+            <Button className="w-full" variant="solid" onClick={runInvestigation} disabled={loading || !input.trim()}>
+              {loading ? <Loader2 data-icon="inline-start" className="animate-spin" /> : <Search data-icon="inline-start" />}
+              {loading ? "Running investigation..." : "Run investigation"}
+            </Button>
+            <div className="rounded-md border border-signal-info/20 bg-signal-info/[0.06] p-4 text-sm leading-6 text-zinc-400">
+              <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-signal-accent"><ShieldAlert className="size-4" /> Legal boundary</div>
+              Collectors use public, analyst-authorized, manual, or synthetic local sources only. Private group bypass, credential theft, purchasing, and evasion are not implemented.
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader><CardTitle>{tabs.find((tab) => tab.id === active)?.label}</CardTitle><CardDescription>Backend enrichment result and extracted risk indicators.</CardDescription></CardHeader>
-          <CardContent><ResultCards result={result} /></CardContent>
-        </Card>
+
+        <div className="grid min-h-0 gap-4">
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card><CardContent className="p-4"><div className="text-xs uppercase tracking-[0.18em] text-ink-muted">Route</div><div className="mt-2 text-sm font-semibold text-ink-primary">{result?.investigation?.investigation_type ?? "not run"}</div></CardContent></Card>
+            <Card><CardContent className="p-4"><div className="text-xs uppercase tracking-[0.18em] text-ink-muted">Documents</div><div className="mt-2 font-mono text-2xl text-ink-primary">{result?.documents?.length ?? 0}</div></CardContent></Card>
+            <Card><CardContent className="p-4"><div className="text-xs uppercase tracking-[0.18em] text-ink-muted">Entities</div><div className="mt-2 font-mono text-2xl text-ink-primary">{result?.entities?.length ?? 0}</div></CardContent></Card>
+            <Card><CardContent className="p-4"><div className="text-xs uppercase tracking-[0.18em] text-ink-muted">Graph</div><div className="mt-2 font-mono text-2xl text-ink-primary">{result?.graph?.nodes?.length ?? 0}/{result?.graph?.edges?.length ?? 0}</div></CardContent></Card>
+          </div>
+
+          {topSignal ? (
+            <Card>
+              <CardHeader><CardTitle>Top risk signal</CardTitle><CardDescription>Explainable score from category, source, entities, recency, location, and classifier confidence.</CardDescription></CardHeader>
+              <CardContent className="grid gap-4 lg:grid-cols-[120px_1fr_220px]">
+                <RiskBadge score={asNumber(topSignal.risk_score)} />
+                <div>
+                  <div className="font-semibold text-ink-primary">{String(topSignal.title ?? topSignal.category)}</div>
+                  <p className="mt-2 text-sm leading-6 text-ink-secondary">{String(topSignal.snippet ?? "").slice(0, 420)}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">{(Array.isArray(topSignal.key_entities) ? topSignal.key_entities : []).slice(0, 8).map((entity: any, index: number) => <Badge key={String(entity.value_redacted) + "-" + index} variant="outline">{entity.type}: {entity.value_redacted}</Badge>)}</div>
+                </div>
+                <div className="space-y-2 text-sm text-ink-secondary">
+                  <div><span className="text-ink-muted">Level:</span> {String(topSignal.risk_level ?? "n/a")}</div>
+                  <div><span className="text-ink-muted">Category:</span> {String(topSignal.category ?? "n/a")}</div>
+                  <div><span className="text-ink-muted">Source:</span> {String(topSignal.source_type ?? "n/a")}</div>
+                  {topSignal.id ? <Button asChild variant="outline" className="mt-2 w-full"><Link href="/threats"><Signal data-icon="inline-start" /> Open signals</Link></Button> : null}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card><CardContent className="flex min-h-40 items-center justify-center text-sm text-ink-secondary"><FileSearch className="mr-2 size-4" /> Run an investigation to populate results.</CardContent></Card>
+          )}
+
+          <div className="grid gap-4 xl:grid-cols-2">
+            <Card>
+              <CardHeader><CardTitle>Collected documents</CardTitle><CardDescription>Source attribution, collection time, and evidence hash are retained.</CardDescription></CardHeader>
+              <CardContent className="max-h-80 space-y-3 overflow-y-auto">
+                {(result?.documents ?? []).slice(0, 12).map((doc: any) => (
+                  <div key={String(doc.id ?? doc.raw_item_id)} className="rounded-md border border-slate-border bg-slate-base/30 p-3">
+                    <div className="flex items-start justify-between gap-3"><div className="font-semibold text-ink-primary">{String(doc.title ?? "Untitled")}</div><Badge variant="outline">{String(doc.sourceType ?? doc.source_type)}</Badge></div>
+                    <p className="mt-2 line-clamp-2 text-sm leading-6 text-ink-secondary">{String(doc.content ?? "")}</p>
+                    <div className="mt-2 break-all font-mono text-[11px] text-ink-muted">{String(doc.evidenceHash ?? doc.content_hash ?? "")}</div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>Next steps</CardTitle><CardDescription>Analyst actions generated for this run.</CardDescription></CardHeader>
+              <CardContent className="space-y-3">
+                {(result?.next_steps ?? ["Run an investigation", "Review signals", "Create case from verified cluster"]).map((step) => <div key={step} className="flex items-center gap-3 rounded-md border border-slate-border bg-slate-base/30 p-3 text-sm text-ink-secondary"><ArrowRight className="size-4 text-signal-accent" />{step}</div>)}
+                <Button asChild variant="outline" className="w-full"><Link href="/graph"><GitBranch data-icon="inline-start" /> Open graph explorer</Link></Button>
+                <Button asChild variant="outline" className="w-full"><Link href="/cases"><Sparkles data-icon="inline-start" /> Create or review case</Link></Button>
+                {result?.investigation?.created_at ? <div className="font-mono text-xs text-ink-muted">Created {formatDate(result.investigation.created_at)}</div> : null}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </>
   );

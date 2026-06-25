@@ -1,0 +1,182 @@
+[
+  {
+    "title": "Darknet demo signal 76: suspected_illicit_vape_sales",
+    "sourceUrl": "mock://onion/post/76",
+    "content": "Synthetic public/authorized demo record for suspected_illicit_vape_sales. Mentions @sample_vape_kz phone +77000000000 wallet TQ7DemoWallet000000000000000001 location Алматы. Terms: вейп delivery одноразка USDT TRC20. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_3. Contact email demo5@example.kz.",
+    "metadata": {
+      "cluster": 0,
+      "synthetic": true
+    }
+  },
+  {
+    "title": "Darknet demo signal 77: suspected_drop_account_recruitment",
+    "sourceUrl": "mock://onion/post/77",
+    "content": "Synthetic public/authorized demo record for suspected_drop_account_recruitment. Mentions @drop_alert_demo phone +77000000001 wallet 0x1111111111111111111111111111111111111111 location Астана. Terms: дроп карта перевод cashout. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_4. Contact email demo6@example.kz.",
+    "metadata": {
+      "cluster": 1,
+      "synthetic": true
+    }
+  },
+  {
+    "title": "Darknet demo signal 78: suspected_database_leak",
+    "sourceUrl": "mock://onion/post/78",
+    "content": "Synthetic public/authorized demo record for suspected_database_leak. Mentions @leak_watch_kz phone +77000000002 wallet bc1demoaddress000000000000000001 location Шымкент. Terms: база слив database ИИН. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_5. Contact email demo0@example.kz.",
+    "metadata": {
+      "cluster": 2,
+      "synthetic": true
+    }
+  },
+  {
+    "title": "Darknet demo signal 79: suspected_payment_fraud",
+    "sourceUrl": "mock://onion/post/79",
+    "content": "Synthetic public/authorized demo record for suspected_payment_fraud. Mentions @pay_clone_demo phone +77000000003 wallet TQ7DemoWallet000000000000000002 location Туркестан. Terms: фишинг clone credential kaspi. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_6. Contact email demo1@example.kz.",
+    "metadata": {
+      "cluster": 3,
+      "synthetic": true
+    }
+  },
+  {
+    "title": "Darknet demo signal 80: suspected_crypto_fraud",
+    "sourceUrl": "mock://onion/post/80",
+    "content": "Synthetic public/authorized demo record for suspected_crypto_fraud. Mentions @crypto_claims_kz phone +77000000004 wallet 0x2222222222222222222222222222222222222222 location Караганда. Terms: crypto wallet USDT инвестиция. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_7. Contact email demo2@example.kz.",
+    "metadata": {
+      "cluster": 4,
+      "synthetic": true
+    }
+  },
+  {
+    "title": "Darknet demo signal 81: suspected_illicit_vape_sales",
+    "sourceUrl": "mock://onion/post/81",
+    "content": "Synthetic public/authorized demo record for suspected_illicit_vape_sales. Mentions @sample_vape_kz phone +77000000000 wallet TQ7DemoWallet000000000000000001 location Алматы. Terms: вейп delivery одноразка USDT TRC20. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_8. Contact email demo3@example.kz.",
+    "metadata": {
+      "cluster": 0,
+      "synthetic": true
+    }
+  },
+  {
+    "title": "Darknet demo signal 82: suspected_drop_account_recruitment",
+    "sourceUrl": "mock://onion/post/82",
+    "content": "Synthetic public/authorized demo record for suspected_drop_account_recruitment. Mentions @drop_alert_demo phone +77000000001 wallet 0x1111111111111111111111111111111111111111 location Астана. Terms: дроп карта перевод cashout. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_0. Contact email demo4@example.kz.",
+    "metadata": {
+      "cluster": 1,
+      "synthetic": true
+    }
+  },
+  {
+    "title": "Darknet demo signal 83: suspected_database_leak",
+    "sourceUrl": "mock://onion/post/83",
+    "content": "Synthetic public/authorized demo record for suspected_database_leak. Mentions @leak_watch_kz phone +77000000002 wallet bc1demoaddress000000000000000001 location Шымкент. Terms: база слив database ИИН. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_1. Contact email demo5@example.kz.",
+    "metadata": {
+      "cluster": 2,
+      "synthetic": true
+    }
+  },
+  {
+    "title": "Darknet demo signal 84: suspected_payment_fraud",
+    "sourceUrl": "mock://onion/post/84",
+    "content": "Synthetic public/authorized demo record for suspected_payment_fraud. Mentions @pay_clone_demo phone +77000000003 wallet TQ7DemoWallet000000000000000002 location Туркестан. Terms: фишинг clone credential kaspi. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_2. Contact email demo6@example.kz.",
+    "metadata": {
+      "cluster": 3,
+      "synthetic": true
+    }
+  },
+  {
+    "title": "Darknet demo signal 85: suspected_crypto_fraud",
+    "sourceUrl": "mock://onion/post/85",
+    "content": "Synthetic public/authorized demo record for suspected_crypto_fraud. Mentions @crypto_claims_kz phone +77000000004 wallet 0x2222222222222222222222222222222222222222 location Караганда. Terms: crypto wallet USDT инвестиция. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_3. Contact email demo0@example.kz.",
+    "metadata": {
+      "cluster": 4,
+      "synthetic": true
+    }
+  },
+  {
+    "title": "Darknet demo signal 86: suspected_illicit_vape_sales",
+    "sourceUrl": "mock://onion/post/86",
+    "content": "Synthetic public/authorized demo record for suspected_illicit_vape_sales. Mentions @sample_vape_kz phone +77000000000 wallet TQ7DemoWallet000000000000000001 location Алматы. Terms: вейп delivery одноразка USDT TRC20. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_4. Contact email demo1@example.kz.",
+    "metadata": {
+      "cluster": 0,
+      "synthetic": true
+    }
+  },
+  {
+    "title": "Darknet demo signal 87: suspected_drop_account_recruitment",
+    "sourceUrl": "mock://onion/post/87",
+    "content": "Synthetic public/authorized demo record for suspected_drop_account_recruitment. Mentions @drop_alert_demo phone +77000000001 wallet 0x1111111111111111111111111111111111111111 location Астана. Terms: дроп карта перевод cashout. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_5. Contact email demo2@example.kz.",
+    "metadata": {
+      "cluster": 1,
+      "synthetic": true
+    }
+  },
+  {
+    "title": "Darknet demo signal 88: suspected_database_leak",
+    "sourceUrl": "mock://onion/post/88",
+    "content": "Synthetic public/authorized demo record for suspected_database_leak. Mentions @leak_watch_kz phone +77000000002 wallet bc1demoaddress000000000000000001 location Шымкент. Terms: база слив database ИИН. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_6. Contact email demo3@example.kz.",
+    "metadata": {
+      "cluster": 2,
+      "synthetic": true
+    }
+  },
+  {
+    "title": "Darknet demo signal 89: suspected_payment_fraud",
+    "sourceUrl": "mock://onion/post/89",
+    "content": "Synthetic public/authorized demo record for suspected_payment_fraud. Mentions @pay_clone_demo phone +77000000003 wallet TQ7DemoWallet000000000000000002 location Туркестан. Terms: фишинг clone credential kaspi. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_7. Contact email demo4@example.kz.",
+    "metadata": {
+      "cluster": 3,
+      "synthetic": true
+    }
+  },
+  {
+    "title": "Darknet demo signal 90: suspected_crypto_fraud",
+    "sourceUrl": "mock://onion/post/90",
+    "content": "Synthetic public/authorized demo record for suspected_crypto_fraud. Mentions @crypto_claims_kz phone +77000000004 wallet 0x2222222222222222222222222222222222222222 location Караганда. Terms: crypto wallet USDT инвестиция. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_8. Contact email demo5@example.kz.",
+    "metadata": {
+      "cluster": 4,
+      "synthetic": true
+    }
+  },
+  {
+    "title": "Darknet demo signal 91: suspected_illicit_vape_sales",
+    "sourceUrl": "mock://onion/post/91",
+    "content": "Synthetic public/authorized demo record for suspected_illicit_vape_sales. Mentions @sample_vape_kz phone +77000000000 wallet TQ7DemoWallet000000000000000001 location Алматы. Terms: вейп delivery одноразка USDT TRC20. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_0. Contact email demo6@example.kz.",
+    "metadata": {
+      "cluster": 0,
+      "synthetic": true
+    }
+  },
+  {
+    "title": "Darknet demo signal 92: suspected_drop_account_recruitment",
+    "sourceUrl": "mock://onion/post/92",
+    "content": "Synthetic public/authorized demo record for suspected_drop_account_recruitment. Mentions @drop_alert_demo phone +77000000001 wallet 0x1111111111111111111111111111111111111111 location Астана. Terms: дроп карта перевод cashout. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_1. Contact email demo0@example.kz.",
+    "metadata": {
+      "cluster": 1,
+      "synthetic": true
+    }
+  },
+  {
+    "title": "Darknet demo signal 93: suspected_database_leak",
+    "sourceUrl": "mock://onion/post/93",
+    "content": "Synthetic public/authorized demo record for suspected_database_leak. Mentions @leak_watch_kz phone +77000000002 wallet bc1demoaddress000000000000000001 location Шымкент. Terms: база слив database ИИН. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_2. Contact email demo1@example.kz.",
+    "metadata": {
+      "cluster": 2,
+      "synthetic": true
+    }
+  },
+  {
+    "title": "Darknet demo signal 94: suspected_payment_fraud",
+    "sourceUrl": "mock://onion/post/94",
+    "content": "Synthetic public/authorized demo record for suspected_payment_fraud. Mentions @pay_clone_demo phone +77000000003 wallet TQ7DemoWallet000000000000000002 location Туркестан. Terms: фишинг clone credential kaspi. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_3. Contact email demo2@example.kz.",
+    "metadata": {
+      "cluster": 3,
+      "synthetic": true
+    }
+  },
+  {
+    "title": "Darknet demo signal 95: suspected_crypto_fraud",
+    "sourceUrl": "mock://onion/post/95",
+    "content": "Synthetic public/authorized demo record for suspected_crypto_fraud. Mentions @crypto_claims_kz phone +77000000004 wallet 0x2222222222222222222222222222222222222222 location Караганда. Terms: crypto wallet USDT инвестиция. This is non-operational mock evidence for analyst workflow testing only. Alias user: demo_alias_4. Contact email demo3@example.kz.",
+    "metadata": {
+      "cluster": 4,
+      "synthetic": true
+    }
+  }
+]

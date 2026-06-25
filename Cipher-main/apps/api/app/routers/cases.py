@@ -99,6 +99,11 @@ def generate_report(case_id: int):
     return ReportGenerator().generate(case_id)
 
 
+@router.post("/{case_id}/export-report")
+def export_report(case_id: int):
+    return ReportGenerator().generate(case_id)
+
+
 @router.post("/{case_id}/export")
 def export_case(case_id: int):
     return ReportGenerator().generate(case_id)

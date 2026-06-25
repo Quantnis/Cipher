@@ -43,7 +43,7 @@ function priorityClass(priority: string) {
   const normalized = priority.toUpperCase();
   if (normalized.includes("НЕМЕД")) return "border-l-rose-400";
   if (normalized.includes("24")) return "border-l-amber-400";
-  return "border-l-cyan-400";
+  return "border-l-signal-info";
 }
 
 function formatDate(value?: string) {
@@ -112,13 +112,13 @@ export function NarrativeViewer({ caseId }: { caseId: number }) {
       <Card>
         <CardContent className="grid min-h-[540px] place-items-center">
           <div className="w-full max-w-xl text-center">
-            <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-full border border-cyan-400/30 bg-cyan-500/10 text-cyan-100 shadow-[0_0_48px_rgba(34,211,238,0.18)]">
+            <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-full border border-signal-info/30 bg-signal-info/10 text-signal-accent ">
               <Loader2 className="size-7 animate-spin" />
             </div>
-            <div className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-100">Threat Narrative Engine</div>
+            <div className="text-sm font-semibold uppercase tracking-[0.2em] text-signal-accent">Threat Narrative Engine</div>
             <p className="mt-4 text-lg text-zinc-100">{loadingTexts[loadingIndex]}</p>
             <div className="mt-8 h-1 overflow-hidden rounded-full bg-zinc-800">
-              <div className="h-full w-2/3 animate-pulse rounded-full bg-gradient-to-r from-cyan-300 via-indigo-400 to-rose-400 shadow-[0_0_24px_rgba(34,211,238,0.45)]" />
+              <div className="h-full w-2/3 animate-pulse rounded-full bg-gradient-to-r from-signal-info via-signal-accent to-signal-critical " />
             </div>
           </div>
         </CardContent>
@@ -143,7 +143,7 @@ export function NarrativeViewer({ caseId }: { caseId: number }) {
     return (
       <Card>
         <CardContent className="flex min-h-[420px] flex-col items-center justify-center text-center">
-          <div className="mb-5 flex size-16 items-center justify-center rounded-full border border-cyan-400/30 bg-cyan-500/10 text-cyan-100 shadow-[0_0_48px_rgba(34,211,238,0.16)]">
+          <div className="mb-5 flex size-16 items-center justify-center rounded-full border border-signal-info/30 bg-signal-info/10 text-signal-accent ">
             <Bot className="size-7" />
           </div>
           <h3 className="text-xl font-semibold uppercase tracking-[0.16em] text-white">Threat Narrative Engine</h3>
@@ -160,14 +160,14 @@ export function NarrativeViewer({ caseId }: { caseId: number }) {
         <div>
           <CardTitle>Аналитическая записка</CardTitle>
           <p className="mt-2 font-mono text-xs text-zinc-500">Кейс #{String(narrative.case_id).toString()} · {formatDate(narrative.generated_at)} · {narrative.generated_by}</p>
-          <p className="mt-1 break-all font-mono text-[11px] text-cyan-200">SHA256: {narrative.document_hash}</p>
+          <p className="mt-1 break-all font-mono text-[11px] text-signal-accent">SHA256: {narrative.document_hash}</p>
         </div>
         <Button variant="solid" onClick={exportPDF}><Download data-icon="inline-start" /> Скачать PDF</Button>
       </CardHeader>
       <CardContent>
         <article id="narrative-doc" className="relative overflow-hidden rounded-lg border border-zinc-800/70 bg-[#050816] p-6 text-zinc-100 md:p-8">
           <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.08]" aria-hidden="true">
-            <text x="50%" y="45%" textAnchor="middle" transform="rotate(-24 500 300)" className="fill-cyan-200 text-[64px] font-black tracking-[0.24em]">CONFIDENTIAL</text>
+            <text x="50%" y="45%" textAnchor="middle" transform="rotate(-24 500 300)" className="fill-signal-accent text-[64px] font-black tracking-[0.24em]">CONFIDENTIAL</text>
           </svg>
           <div className="relative z-10">
             <div className="mb-6 border-b border-zinc-800 pb-4">
@@ -186,7 +186,7 @@ export function NarrativeViewer({ caseId }: { caseId: number }) {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="text-[10px] uppercase tracking-[0.2em] text-zinc-600"><tr><th className="p-2 text-left">Сущность</th><th className="p-2 text-left">Тип</th><th className="p-2 text-left">Риск</th><th className="p-2 text-left">Причина</th></tr></thead>
-                  <tbody>{narrative.entity_risk_table.map((row, index) => <tr key={`${row.entity}-${index}`} className="border-t border-zinc-800/80"><td className="p-2 font-mono text-cyan-100">{row.entity}</td><td className="p-2 text-zinc-400">{row.type}</td><td className="p-2"><span className={cn("rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider", riskBadgeClass(row.risk_level))}>{row.risk_level}</span></td><td className="p-2 text-zinc-400">{row.risk_reason}<div className="mt-1 text-xs text-zinc-600">{row.connection_to_case}</div></td></tr>)}</tbody>
+                  <tbody>{narrative.entity_risk_table.map((row, index) => <tr key={`${row.entity}-${index}`} className="border-t border-zinc-800/80"><td className="p-2 font-mono text-signal-accent">{row.entity}</td><td className="p-2 text-zinc-400">{row.type}</td><td className="p-2"><span className={cn("rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider", riskBadgeClass(row.risk_level))}>{row.risk_level}</span></td><td className="p-2 text-zinc-400">{row.risk_reason}<div className="mt-1 text-xs text-zinc-600">{row.connection_to_case}</div></td></tr>)}</tbody>
                 </table>
               </div>
             </Section>
@@ -212,6 +212,5 @@ export function NarrativeViewer({ caseId }: { caseId: number }) {
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="border-b border-zinc-800/80 py-5"><h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-100">{title}</h3><div className="text-sm leading-7 text-zinc-300">{children}</div></section>;
+  return <section className="border-b border-zinc-800/80 py-5"><h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-signal-accent">{title}</h3><div className="text-sm leading-7 text-zinc-300">{children}</div></section>;
 }
-

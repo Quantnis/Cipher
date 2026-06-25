@@ -47,6 +47,35 @@ class CollectionJob(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
+class Investigation(Base):
+    __tablename__ = "investigations"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    input_text: Mapped[str] = mapped_column(Text)
+    investigation_type: Mapped[str] = mapped_column(String(80), index=True)
+    manual_route_override: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    status: Mapped[str] = mapped_column(String(40), default="queued", index=True)
+    category_hint: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    max_results: Mapped[int] = mapped_column(Integer, default=25)
+    risk_threshold: Mapped[int] = mapped_column(Integer, default=0)
+    summary: Mapped[str] = mapped_column(Text, default="")
+    result_counts: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class InvestigationJob(Base):
+    __tablename__ = "investigation_jobs"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    investigation_id: Mapped[int] = mapped_column(ForeignKey("investigations.id"), index=True)
+    status: Mapped[str] = mapped_column(String(40), default="queued", index=True)
+    stage: Mapped[str] = mapped_column(String(60), default="queued")
+    connector_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    metadata_json: Mapped[dict] = mapped_column("metadata", JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class RawItem(Base):
     __tablename__ = "raw_items"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -71,6 +100,23 @@ class RawItem(Base):
     __table_args__ = (UniqueConstraint("source_id", "content_hash", name="uq_raw_item_source_hash"),)
 
 
+class Document(Base):
+    __tablename__ = "documents"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    raw_item_id: Mapped[int] = mapped_column(ForeignKey("raw_items.id"), unique=True, index=True)
+    investigation_id: Mapped[int | None] = mapped_column(ForeignKey("investigations.id"), nullable=True, index=True)
+    source_id: Mapped[int | None] = mapped_column(ForeignKey("sources.id"), nullable=True, index=True)
+    source_type: Mapped[str] = mapped_column(String(60), index=True)
+    source_name: Mapped[str] = mapped_column(String(180), default="")
+    source_url: Mapped[str] = mapped_column(Text, default="")
+    title: Mapped[str] = mapped_column(String(260), default="")
+    content_hash: Mapped[str] = mapped_column(String(128), index=True)
+    language: Mapped[str] = mapped_column(String(30), default="unknown")
+    published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    collected_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+    metadata_json: Mapped[dict] = mapped_column("metadata", JSON, default=dict)
+
+
 class Entity(Base):
     __tablename__ = "entities"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -92,6 +138,47 @@ class ItemEntity(Base):
     entity_id: Mapped[int] = mapped_column(ForeignKey("entities.id"), primary_key=True)
     confidence: Mapped[float] = mapped_column(Float, default=0.8)
     extraction_method: Mapped[str] = mapped_column(String(80), default="regex")
+
+
+class DocumentEntity(Base):
+    __tablename__ = "document_entities"
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id"), primary_key=True)
+    entity_id: Mapped[int] = mapped_column(ForeignKey("entities.id"), primary_key=True)
+    confidence: Mapped[float] = mapped_column(Float, default=0.8)
+    context_snippet: Mapped[str] = mapped_column(Text, default="")
+
+
+class Classification(Base):
+    __tablename__ = "classifications"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id"), index=True)
+    category: Mapped[str] = mapped_column(String(120), index=True)
+    confidence: Mapped[float] = mapped_column(Float, default=0)
+    severity: Mapped[str] = mapped_column(String(40), default="low", index=True)
+    summary: Mapped[str] = mapped_column(Text, default="")
+    risk_signals: Mapped[list] = mapped_column(JSON, default=list)
+    reasoning: Mapped[list] = mapped_column(JSON, default=list)
+    recommended_next_steps: Mapped[list] = mapped_column(JSON, default=list)
+    provider: Mapped[str] = mapped_column(String(80), default="rules")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class RiskSignal(Base):
+    __tablename__ = "risk_signals"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    investigation_id: Mapped[int | None] = mapped_column(ForeignKey("investigations.id"), nullable=True, index=True)
+    document_id: Mapped[int | None] = mapped_column(ForeignKey("documents.id"), nullable=True, index=True)
+    alert_id: Mapped[int | None] = mapped_column(ForeignKey("alerts.id"), nullable=True, index=True)
+    category: Mapped[str] = mapped_column(String(120), index=True)
+    risk_score: Mapped[float] = mapped_column(Float, default=0, index=True)
+    risk_level: Mapped[str] = mapped_column(String(40), default="low", index=True)
+    title: Mapped[str] = mapped_column(String(260), default="")
+    snippet: Mapped[str] = mapped_column(Text, default="")
+    source_type: Mapped[str] = mapped_column(String(60), default="", index=True)
+    key_entities: Mapped[list] = mapped_column(JSON, default=list)
+    risk_factors: Mapped[list] = mapped_column(JSON, default=list)
+    status: Mapped[str] = mapped_column(String(40), default="new", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class GraphNode(Base):
@@ -141,6 +228,14 @@ class AnalystCase(Base):
     recommended_actions: Mapped[list] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class CaseDocument(Base):
+    __tablename__ = "case_documents"
+    case_id: Mapped[int] = mapped_column(ForeignKey("analyst_cases.id"), primary_key=True)
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id"), primary_key=True)
+    added_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    metadata_json: Mapped[dict] = mapped_column("metadata", JSON, default=dict)
 
 
 class Alert(Base):
@@ -294,4 +389,16 @@ class SlangTerm(Base):
     risk_weight: Mapped[float] = mapped_column(Float, default=1)
     notes: Mapped[str] = mapped_column(Text, default="")
 
+class ConnectorConfig(Base):
+    __tablename__ = "connector_configs"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    connector_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(180))
+    type: Mapped[str] = mapped_column(String(80), index=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    config_json: Mapped[dict] = mapped_column("config", JSON, default=dict)
+    health_status: Mapped[str] = mapped_column(String(80), default="configured")
+    last_checked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 

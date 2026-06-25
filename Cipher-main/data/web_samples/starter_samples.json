@@ -1,0 +1,20 @@
+[
+  {
+    "title": "Public web sample vape Almaty",
+    "sourceUrl": "https://synthetic.local/public/vape-almaty",
+    "content": "Synthetic public web excerpt: vape delivery Almaty telegram @sample_vape_kz phone +77000000000 USDT TRC20 wallet TQ7DemoWallet000000000000000001. Demo evidence only.",
+    "metadata": {
+      "synthetic": true,
+      "cluster": "vape_almaty"
+    }
+  },
+  {
+    "title": "Public web sample leak mention",
+    "sourceUrl": "https://synthetic.local/public/leak-watch",
+    "content": "Synthetic public web excerpt: database leak mention in Астана with @leak_watch_kz and demo2@example.kz. No real leaked data.",
+    "metadata": {
+      "synthetic": true,
+      "cluster": "leak_astana"
+    }
+  }
+]

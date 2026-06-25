@@ -1,24 +1,23 @@
 import * as React from "react";
-import { Slot } from "@radix-ui/react-slot";
+import { Slot, Slottable } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "relative group inline-flex items-center justify-center gap-2 whitespace-nowrap border text-foreground text-center rounded-full font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "relative group inline-flex items-center justify-center gap-2 whitespace-nowrap border text-foreground text-center rounded-full font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal-info/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-base disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-blue-500/5 hover:bg-blue-500/0 border-blue-500/20 hover:border-blue-400/50 hover:text-cyan-100",
-        solid: "bg-blue-500 hover:bg-blue-600 text-white border-transparent hover:border-foreground/50 shadow-[0_0_24px_rgba(59,130,246,0.22)]",
-        ghost: "border-transparent bg-transparent hover:border-zinc-600 hover:bg-white/10",
-        outline: "bg-slate-950/40 border-slate-700/80 hover:border-cyan-400/60 hover:bg-cyan-500/10 hover:text-cyan-100",
-        destructive: "bg-rose-600/15 border-rose-500/35 text-rose-100 hover:bg-rose-600/25 hover:border-rose-400/70 shadow-[0_0_24px_rgba(225,29,72,0.16)]"
+        default: "bg-signal-info/5 hover:bg-signal-info/10 border-signal-info/20 hover:border-signal-info/50 hover:text-ink-primary",
+        solid: "border-signal-info bg-signal-info text-ink-primary hover:bg-signal-info/90",
+        outline: "bg-slate-base/40 border-slate-strong hover:border-signal-info/60 hover:bg-signal-info/10 hover:text-ink-primary",
+        ghost: "border-transparent hover:bg-slate-elevated/70 text-ink-secondary hover:text-ink-primary"
       },
       size: {
-        default: "h-9 px-7 py-1.5 text-sm",
-        sm: "h-8 px-4 py-0.5 text-xs",
-        lg: "h-11 px-10 py-2.5 text-base",
-        icon: "size-9 p-0"
+        default: "h-10 px-4 py-2 text-sm",
+        sm: "h-8 px-3 text-xs",
+        lg: "h-12 px-6 text-base",
+        icon: "h-10 w-10"
       }
     },
     defaultVariants: {
@@ -34,35 +33,29 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ className, neon = true, size, variant, asChild = false, children, ...props }, ref) => {
-  const classes = cn(buttonVariants({ variant, size }), className);
-
-  if (asChild) {
-    return (
-      <Slot className={classes} ref={ref} {...props}>
-        {children}
-      </Slot>
-    );
-  }
-
+  const Comp = asChild ? Slot : "button";
   return (
-    <button className={classes} ref={ref} {...props}>
+    <Comp ref={ref} className={cn(buttonVariants({ variant, size, className }))} {...props}>
+      <Slottable>{children}</Slottable>
       <span
+        aria-hidden
         className={cn(
-          "absolute inset-x-0 inset-y-0 mx-auto hidden h-px w-3/4 bg-gradient-to-r from-transparent via-blue-600 to-transparent opacity-0 transition-all duration-500 ease-in-out group-hover:opacity-100 dark:via-blue-500",
+          "pointer-events-none absolute inset-0 rounded-full opacity-0 transition-opacity duration-200 group-hover:opacity-100",
+          "bg-[radial-gradient(circle_at_50%_0%,rgba(47,129,247,0.18),transparent_55%)]",
           neon && "block"
         )}
       />
-      {children}
       <span
+        aria-hidden
         className={cn(
-          "absolute inset-x-0 -bottom-px mx-auto hidden h-px w-3/4 bg-gradient-to-r from-transparent via-blue-600 to-transparent opacity-0 transition-all duration-500 ease-in-out group-hover:opacity-30 dark:via-blue-500",
+          "pointer-events-none absolute -inset-px -z-10 rounded-full opacity-0 blur-md transition-opacity duration-200 group-hover:opacity-100",
+          "bg-[rgba(47,129,247,0.16)]",
           neon && "block"
         )}
       />
-    </button>
+    </Comp>
   );
 });
-
 Button.displayName = "Button";
 
 export { Button, buttonVariants };

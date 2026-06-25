@@ -54,6 +54,44 @@ docker compose up --build
 
 Docker overrides `DATABASE_URL` to Postgres. Local non-Docker development uses SQLite by default.
 
+## AI Investigation MVP
+
+The MVP now includes a first-class investigation workflow:
+
+1. Open `/osint` and enter free text such as `vape delivery Almaty telegram usdt`.
+2. Leave Source mode as `Auto route`, or manually choose web, public Telegram, authorized mock darknet, entity lookup, wallet lookup, leak mention lookup, mixed scan, or manual text analysis.
+3. The backend creates an `investigations` record, runs legal/mock connectors, ingests collected documents, extracts entities, classifies category, scores risk, stores evidence hashes, creates graph edges, and returns signals.
+4. Use `/threats`, `/entities/:id`, `/graph`, `/cases`, and `/reports` to continue analysis, create a case, and export a report.
+
+Investigation types:
+
+- `web_search`
+- `telegram_public`
+- `darknet_authorized`
+- `entity_lookup`
+- `crypto_wallet_lookup`
+- `leak_mention_lookup`
+- `mixed_full_scan`
+- `manual_text_analysis`
+
+Safe connector behavior:
+
+- Public web uses direct public-source collection elsewhere in Sources, plus mock/generated web samples for investigations when no search API is configured.
+- Telegram investigation uses public/authorized mock samples by default and never bypasses private groups.
+- Darknet investigation reads only `data/darknet_samples` or generated `mock://onion/...` records by default. Real Tor is disabled unless `ENABLE_AUTHORIZED_TOR=true` and an analyst provides authorized seed URLs.
+- Manual evidence preserves the submitted text hash and provenance metadata.
+
+## Demo Seed Data
+
+Generate a safe synthetic dataset with 100 records across mock web, public Telegram, and mock authorized darknet sources:
+
+```bash
+cd apps/api
+python -m app.seed.seed_demo
+```
+
+The seed includes Kazakhstan locations, fake Telegram handles, fake +7 phone numbers, fake wallets, repeated entities for graph clusters, and non-operational suspicious text. It writes sample files under `data/web_samples`, `data/telegram_samples`, and `data/darknet_samples`.
+
 ## Real Data Mode
 
 `DEMO_MODE=false` by default. With no sources configured, the app displays empty states and integration setup messages. No fake Telegram posts, wallets, darknet findings, locations, or cases are shown as real data.
@@ -93,6 +131,7 @@ TELEGRAM_API_ID=
 TELEGRAM_API_HASH=
 TELEGRAM_SESSION_NAME=
 TOR_PROXY_URL=socks5h://127.0.0.1:9050
+ENABLE_AUTHORIZED_TOR=false
 ETHERSCAN_API_KEY=
 TRONSCAN_API_KEY=
 BLOCKCHAIN_PROVIDER=
@@ -105,6 +144,18 @@ If credentials are missing, `/settings/integrations` returns setup states such a
 
 ## API Highlights
 
+- `GET/POST /api/investigations`
+- `POST /api/investigations/{id}/run`
+- `GET /api/investigations/{id}/status`
+- `GET /api/investigations/{id}/results`
+- `GET /api/signals`
+- `POST /api/signals/{id}/create-case`
+- `GET /api/entities/{id}/graph`
+- `GET /api/entities/{id}/documents`
+- `GET /api/graph/search`
+- `GET /api/graph/neighbors/{nodeId}`
+- `POST /api/cases/{id}/export-report`
+- `GET /api/audit-logs`
 - `GET/POST /api/sources`
 - `PATCH/DELETE /api/sources/{id}`
 - `POST /api/sources/{id}/test`

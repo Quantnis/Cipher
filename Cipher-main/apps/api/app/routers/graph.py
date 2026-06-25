@@ -80,3 +80,19 @@ def query(payload: GraphQuery):
 def selected_to_case(payload: dict):
     repo.log("graph.selected_to_case", "case", payload.get("case_id"), payload)
     return {"case_id": payload.get("case_id", 1), "selected_nodes": payload.get("node_ids", []), "status": "added"}
+
+
+@router.get("/search")
+def search_graph(q: str = "", risk_min: int = 0, entity_type: str | None = None):
+    payload = GraphService().react_flow(risk_min=risk_min, entity_type=entity_type, limit=250)
+    if not q:
+        return payload
+    keep = {node["id"] for node in payload["nodes"] if q.lower() in f"{node.get('label')} {node.get('type')}".lower()}
+    related = [edge for edge in payload["edges"] if edge["source"] in keep or edge["target"] in keep]
+    keep |= {edge["source"] for edge in related} | {edge["target"] for edge in related}
+    return {"nodes": [node for node in payload["nodes"] if node["id"] in keep], "edges": related, "clusters": payload.get("clusters", [])}
+
+
+@router.get("/neighbors/{node_id}")
+def neighbors(node_id: str):
+    return GraphService().expand_node(node_id)
